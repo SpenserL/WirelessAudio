@@ -2,6 +2,7 @@
 
 AudioManager::AudioManager(QObject * par) : parent(par) {
   audio = new QAudioOutput(QAudioFormat(), par);
+  songState = Stopped;
 }
 
 AudioManager::~AudioManager() {
@@ -9,6 +10,10 @@ AudioManager::~AudioManager() {
 }
 
 void AudioManager::loadSong(QFile * f) {
+    if (songState != Stopped) {
+        stop();
+    }
+
     file = f;
     wav_hdr wavHeader;
     file->open(QIODevice::ReadOnly);
@@ -28,20 +33,26 @@ void AudioManager::loadSong(QFile * f) {
     format.setSampleType(QAudioFormat::UnSignedInt);
     audio = new QAudioOutput(format, parent);
     audio->setVolume(volume);
+    songState = Stopped;
 }
 
 void AudioManager::pause() {
     audio->suspend();
+    songState = Paused;
 }
 
 void AudioManager::resume() {
     audio->resume();
+    songState = Playing;
 }
 
 void AudioManager::stop() {
+    if (songState == Stopped)
+        return;
     audio->stop();
     file->close();
     delete audio;
+    songState = Stopped;
 }
 
 void AudioManager::skip(float seconds) {

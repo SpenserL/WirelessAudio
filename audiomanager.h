@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QDebug>
 #include "wavheader.h"
+#include "songstate.h"
 
 class AudioManager {
 public:
@@ -27,6 +28,7 @@ private:
     QFile *file;
     QIODevice *device;
     float volume = 10;
+    SongState songState;
 };
 
 #endif // AUDIOMANAGER_H

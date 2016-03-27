@@ -19,7 +19,15 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_released();
+    void on_playButton_released();
+
+    void on_pauseButton_released();
+
+    void on_resumeButton_released();
+
+    void on_skipForwardButton_released();
+
+    void on_skipBackwardsButton_released();
 
 private:
     Ui::MainWindow *ui;

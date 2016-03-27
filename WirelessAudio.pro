@@ -18,7 +18,8 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
-    wavheader.h
+    wavheader.h \
+    songstate.h
 
 FORMS    += mainwindow.ui
 
