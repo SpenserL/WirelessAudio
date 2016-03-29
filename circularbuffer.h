@@ -5,18 +5,17 @@
 #include <string.h>
 
 //Carson
-struct CircularBuffer
-{
-    int	maxSize;
+struct CircularBuffer {
+    int	maxLength;
     int	length;
-    int	elementSize;
+    int	elementLength;
     void * buffer;
     void * bufferEnd;
     void * front;
     void * back;
 };
 
-void CircularBufferInitialize(CircularBuffer * circularBuffer, int maxSize, int elementSize);
+bool CircularBufferInitialize(CircularBuffer * circularBuffer, int maxLength, int elementLength);
 void CircularBufferFree(CircularBuffer * circularBuffer);
 void CircularBufferPushBack(CircularBuffer * circularBuffer, const void * item);
 void CircularBufferPop(CircularBuffer * circularBuffer, void * item);
