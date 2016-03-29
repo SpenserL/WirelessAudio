@@ -8,6 +8,7 @@
 #include "wavheader.h"
 #include "songstate.h"
 
+//Carson
 class AudioManager {
 public:
     AudioManager(QObject * parent);

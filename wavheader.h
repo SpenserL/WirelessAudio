@@ -1,6 +1,7 @@
 #ifndef WAVHEADER_H
 #define WAVHEADER_H
 
+//Carson
 typedef struct  WAV_HEADER
 {
     /* RIFF Chunk Descriptor */

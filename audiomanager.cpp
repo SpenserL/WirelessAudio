@@ -1,5 +1,6 @@
 #include "audiomanager.h"
 
+//Carson
 AudioManager::AudioManager(QObject * par) : parent(par) {
   audio = new QAudioOutput(QAudioFormat(), par);
   songState = Stopped;
