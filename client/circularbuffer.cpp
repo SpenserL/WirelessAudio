@@ -43,5 +43,21 @@ bool CircularBuffer::pop(QBuffer* buf) {
         back = buffer;
     }
     --(length);
+
+    if (buf != lastBuffer)
+        lastBuffer = buf;
+
     return true;
+}
+
+void CircularBuffer::resetBuffer() {
+    free(buffer);
+    buffer = malloc(maxLength* elementLength);
+    if (buffer == NULL) {
+        return;
+    }
+    bufferEnd = (char*)buffer + maxLength * elementLength;
+    length = 0;
+    front = buffer;
+    back = buffer;
 }

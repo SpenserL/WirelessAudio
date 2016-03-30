@@ -1,0 +1,6 @@
+﻿  Server.cpp
+c:\users\micah\onedrive\bcit\comp4985\assignments\assign2\assign2\assign2\server.cpp(118): warning C4101: 'tmprcv': unreferenced local variable
+  Main.cpp
+  Generating Code...
+  Assign2.vcxproj -> C:\Users\Micah\OneDrive\BCIT\COMP4985\Assignments\Assign2\Assign2\Debug\Assign2.exe
+  Assign2.vcxproj -> C:\Users\Micah\OneDrive\BCIT\COMP4985\Assignments\Assign2\Assign2\Debug\Assign2.pdb (Partial PDB)

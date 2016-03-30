@@ -10,14 +10,15 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = WirelessAudio
 TEMPLATE = app
-
+LIBS = -lws2_32
 
 SOURCES += main.cpp\
         mainwindow.cpp \
     audiomanager.cpp \
     circularbuffer.cpp \
     readfileworker.cpp \
-    populatebufferworker.cpp
+    populatebufferworker.cpp \
+    Client.cpp
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
@@ -25,7 +26,8 @@ HEADERS  += mainwindow.h \
     songstate.h \
     circularbuffer.h \
     readfileworker.h \
-    populatebufferworker.h
+    populatebufferworker.h \
+    Client.h
 
 FORMS    += mainwindow.ui
 

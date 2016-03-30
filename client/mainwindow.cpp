@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
     audioManager = new AudioManager(this);
@@ -37,4 +38,9 @@ void MainWindow::on_skipForwardButton_released()
 void MainWindow::on_skipBackwardsButton_released()
 {
     audioManager->skip(-10);
+}
+
+void MainWindow::on_actionConnect_triggered()
+{
+    //ClientSetup(true);
 }
