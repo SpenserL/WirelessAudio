@@ -24,7 +24,6 @@ AudioManager::~AudioManager() {
 }
 
 void AudioManager::loadSong(QFile * f) {
-    char data[BUFFERSIZE];
     if (songState != Stopped) {
         stop();
     }
@@ -33,6 +32,8 @@ void AudioManager::loadSong(QFile * f) {
     connect(&readWorkerThread, &QThread::finished, readFileWorker, &QObject::deleteLater);
     connect(&readWorkerThread, SIGNAL(started()), readFileWorker, SLOT(doWork()));
     connect(readFileWorker, SIGNAL(gotWavHeader(wav_hdr)), this, SLOT(receivedWavHeader(wav_hdr)));
+    circularBuffer->resetBuffer();
+    buffer->seek(0);
     readWorkerThread.start();
 }
 

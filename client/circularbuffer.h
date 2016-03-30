@@ -11,6 +11,12 @@
 //Carson
 class CircularBuffer {
 public:
+    CircularBuffer(int maxLength, int elementLength, QObject* parent);
+    ~CircularBuffer();
+    bool pushBack(void* item);
+    bool pop(QBuffer* buffer);
+    void resetBuffer();
+
     int	maxLength;
     int	length;
     int	elementLength;
@@ -19,11 +25,7 @@ public:
     void* front;
     void* back;
     QObject* parent;
-
-    CircularBuffer(int maxLength, int elementLength, QObject* parent);
-    ~CircularBuffer();
-    bool pushBack(void* item);
-    bool pop(QBuffer* buffer);
+    QBuffer* lastBuffer;
 };
 
 
