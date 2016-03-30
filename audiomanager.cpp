@@ -1,28 +1,26 @@
 #include "audiomanager.h"
 
 //Carson
-AudioManager::AudioManager(QObject * par) : parent(par) {
+AudioManager::AudioManager(QObject * par) {
+  parent = par;
   songState = Stopped;
   circularBuffer = new CircularBuffer(CIRCULARBUFFERSIZE, BUFFERSIZE, par);
-  //for(int i = 0; i < 100000; i++)
-  //  circularBuffer->pushBack((void*)"1");
-
   buffer = new QBuffer(parent);
-  //while(circularBuffer->pop(buffer));
-  /*while(circularBuffer->pop(buffer)) {
-    char data[BUFFERSIZE];
-    buffer->seek(0);
-    int size = buffer->read(data, BUFFERSIZE);
-    if (size > 0) {
-        qDebug() << "Message:" << data;
-    }
-  }*/
+  qRegisterMetaType<wav_hdr>("wav_hdr");
+
+  populateBufferWorker = new PopulateBufferWorker(circularBuffer, buffer);
+  populateBufferWorker->moveToThread(&populateBufferThread);
+  connect(&populateBufferThread, SIGNAL(started()), populateBufferWorker, SLOT(doWork()));
+  connect(&populateBufferThread, &QThread::finished, populateBufferWorker, &QObject::deleteLater);
+  populateBufferThread.start();
 }
 
 AudioManager::~AudioManager() {
     delete audio;
     delete circularBuffer;
     delete buffer;
+    delete readFileWorker;
+    delete populateBufferWorker;
 }
 
 void AudioManager::loadSong(QFile * f) {
@@ -30,24 +28,16 @@ void AudioManager::loadSong(QFile * f) {
     if (songState != Stopped) {
         stop();
     }
+    readFileWorker = new ReadFileWorker(f, circularBuffer);
+    readFileWorker->moveToThread(&readWorkerThread);
+    connect(&readWorkerThread, &QThread::finished, readFileWorker, &QObject::deleteLater);
+    connect(&readWorkerThread, SIGNAL(started()), readFileWorker, SLOT(doWork()));
+    connect(readFileWorker, SIGNAL(gotWavHeader(wav_hdr)), this, SLOT(receivedWavHeader(wav_hdr)));
+    readWorkerThread.start();
+}
 
-    file = f;
-    wav_hdr wavHeader;
-    file->open(QIODevice::ReadOnly);
-    buffer->open(QIODevice::WriteOnly);
-    //buffer->open(QIODevice::ReadOnly);
-    int bytesRead = file->read((char*)&wavHeader, sizeof(wav_hdr));
-    while(file->read(data, BUFFERSIZE) > 0) {
-        circularBuffer->pushBack(data);
-        circularBuffer->pop(buffer);
-    }
-    file->close();
-    buffer->close();
-    if (bytesRead == -1) {
-        qDebug() << "[ERROR] audiomanager.cpp's loadSong()";
-        return;
-    }
-
+void AudioManager::receivedWavHeader(wav_hdr wavHeader) {
+    qDebug() << "Received Header";
     format.setSampleRate(wavHeader.SamplesPerSec);
     format.setChannelCount(wavHeader.NumOfChan);
     format.setSampleSize(wavHeader.bitsPerSample);
@@ -57,7 +47,8 @@ void AudioManager::loadSong(QFile * f) {
     format.setSampleType(QAudioFormat::UnSignedInt);
     audio = new QAudioOutput(format, parent);
     audio->setVolume(volume);
-    songState = Stopped;
+    songState = Playing;
+    play();
 }
 
 void AudioManager::pause() {
@@ -84,9 +75,9 @@ void AudioManager::skip(float seconds) {
 }
 
 QIODevice * AudioManager::play() {
-    buffer->open(QIODevice::ReadOnly);
     device = buffer;
     audio->start(device);
+    qDebug() << "Playing device, current buffered amount: " << buffer->size();
     return device;
 }
 

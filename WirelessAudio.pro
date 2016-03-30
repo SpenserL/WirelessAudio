@@ -15,13 +15,17 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     audiomanager.cpp \
-    circularbuffer.cpp
+    circularbuffer.cpp \
+    readfileworker.cpp \
+    populatebufferworker.cpp
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
     wavheader.h \
     songstate.h \
-    circularbuffer.h
+    circularbuffer.h \
+    readfileworker.h \
+    populatebufferworker.h
 
 FORMS    += mainwindow.ui
 

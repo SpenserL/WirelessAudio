@@ -40,11 +40,9 @@ bool CircularBuffer::pop(QBuffer* buf) {
     }
     --(length);
 
-    buf->open(QIODevice::WriteOnly);
     qint64 curPos = buf->pos();
     buf->seek(buf->size());
-    qDebug() << buf->write(data, BUFFERSIZE);
+    buf->write(data, BUFFERSIZE);
     buf->seek(curPos);
-    buf->close();
     return true;
 }
