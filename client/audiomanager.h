@@ -5,10 +5,16 @@
 #include <QAudioOutput>
 #include <QFile>
 #include <QDebug>
+#include <QMetaType>
 #include "wavheader.h"
 #include "songstate.h"
+#include "circularbuffer.h"
+#include "readfileworker.h"
+#include "populatebufferworker.h"
 
-class AudioManager {
+//Carson
+class AudioManager : public QObject {
+Q_OBJECT
 public:
     AudioManager(QObject * parent);
     ~AudioManager();
@@ -21,6 +27,9 @@ public:
     void loadSong(QFile * file);
     void stop();
 
+public slots:
+    void receivedWavHeader(wav_hdr wavHeader);
+
 private:
     QAudioFormat format;
     QAudioOutput *audio;
@@ -29,6 +38,13 @@ private:
     QIODevice *device;
     float volume = 10;
     SongState songState;
+    CircularBuffer *circularBuffer;
+    QBuffer *buffer;
+    ReadFileWorker *readFileWorker;
+    PopulateBufferWorker *populateBufferWorker;
+    QThread readWorkerThread;
+    QThread populateBufferThread;
+    int bytesPerSecond;
 };
 
 #endif // AUDIOMANAGER_H

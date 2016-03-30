@@ -1,8 +1,8 @@
 #ifndef WAVHEADER_H
 #define WAVHEADER_H
 
-typedef struct  WAV_HEADER
-{
+//Carson
+typedef struct  WAV_HEADER {
     /* RIFF Chunk Descriptor */
     uint8_t         RIFF[4];        // RIFF Header Magic header
     uint32_t        ChunkSize;      // RIFF Chunk Size

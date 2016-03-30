@@ -17,7 +17,7 @@ void MainWindow::on_playButton_released()
     audioManager->stop();
     QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song"), 0, tr("Music (*.wav)")));
     audioManager->loadSong(file);
-    audioManager->play();
+    //audioManager->play();
 }
 
 void MainWindow::on_pauseButton_released()

@@ -15,16 +15,19 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     audiomanager.cpp \
-    Client.cpp
+    circularbuffer.cpp \
+    readfileworker.cpp \
+    populatebufferworker.cpp
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
     wavheader.h \
     songstate.h \
-    Client.h
+    circularbuffer.h \
+    readfileworker.h \
+    populatebufferworker.h
 
 FORMS    += mainwindow.ui
 
 DISTFILES += \
-    test.wav \
-    instructions.txt
+    test.wav
