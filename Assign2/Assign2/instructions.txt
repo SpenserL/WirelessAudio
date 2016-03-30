@@ -1,0 +1,4 @@
+To use this program you will need two computers connected to each other via a network.
+Select "Client" mode for one and "Server" mode for the other.
+Open a connection using the same protocol on both.
+After clicking "send" the data will be saved in the file you were prompted to create when opening a connection on the server.

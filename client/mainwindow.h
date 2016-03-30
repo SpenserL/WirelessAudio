@@ -29,6 +29,8 @@ private slots:
 
     void on_skipBackwardsButton_released();
 
+    void on_actionConnect_triggered();
+
 private:
     Ui::MainWindow *ui;
     AudioManager *audioManager;
