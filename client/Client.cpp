@@ -3,6 +3,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
+#include <Ws2tcpip.h>
 #include <winsock2.h>
 #include <stdio.h>
 #include "Client.h"

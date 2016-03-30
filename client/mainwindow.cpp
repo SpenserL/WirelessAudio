@@ -42,5 +42,5 @@ void MainWindow::on_skipBackwardsButton_released()
 
 void MainWindow::on_actionConnect_triggered()
 {
-    ClientSetup(true);
+    //ClientSetup(true);
 }

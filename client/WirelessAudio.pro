@@ -17,7 +17,8 @@ SOURCES += main.cpp\
     audiomanager.cpp \
     circularbuffer.cpp \
     readfileworker.cpp \
-    populatebufferworker.cpp
+    populatebufferworker.cpp \
+    Client.cpp
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
@@ -25,7 +26,8 @@ HEADERS  += mainwindow.h \
     songstate.h \
     circularbuffer.h \
     readfileworker.h \
-    populatebufferworker.h
+    populatebufferworker.h \
+    Client.h
 
 FORMS    += mainwindow.ui
 
