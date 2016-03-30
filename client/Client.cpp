@@ -3,9 +3,10 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
-#include <Ws2tcpip.h>
+//#include <Ws2tcpip.h>
 #include <winsock2.h>
 #include <stdio.h>
+#include <QDebug>
 #include "Client.h"
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -21,7 +22,7 @@ int ClientSetup(bool tcp) {
 
 	wVersionRequested = MAKEWORD(2, 2);
 	if (WSAStartup(wVersionRequested, &WSAData) != 0) {
-		OutputDebugString("DLL not found!\n");
+        qDebug() << "DLL not found!\n";
 		ShowLastErr(true);
 		return -1;
 	}
@@ -29,14 +30,14 @@ int ClientSetup(bool tcp) {
 	if (tcp) {
 		if ((sClient = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 		{
-			OutputDebugString("Cannot create tcp socket\n");
+            qDebug() << "Cannot create tcp socket\n";
 			return -1;
 		}
 	}
 	else {
 		if ((sClient = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
 		{
-			OutputDebugString("Cannot create udp socket\n");
+            qDebug() << "Cannot create udp socket\n";
 			return -1;
 		}
 	}
@@ -47,7 +48,7 @@ int ClientSetup(bool tcp) {
 	server.sin_port = htons(SERVER_DEFAULT_PORT);
 	if ((hp = gethostbyname(address)) == NULL)
 	{
-		OutputDebugString("Unknown server address\n");
+        qDebug() << "Unknown server address\n";
 		return -1;
 	}
 
@@ -58,7 +59,7 @@ int ClientSetup(bool tcp) {
 		// Connecting to the server
 		if (connect(sClient, (struct sockaddr *)&server, sizeof(server)) == -1)
 		{
-			OutputDebugString("Can't connect to server\n");
+            qDebug() << "Can't connect to server\n";
 			ShowLastErr(true);
 			return -1;
 		}
@@ -87,15 +88,15 @@ DWORD WINAPI ClientSend(LPVOID strucParams) {
 	int sentpackets = 0;
 	struct sockaddr_in sockadd = clientparam->server;
 
-	clientrunning = true;
+    //clientrunning = true;
 
-	hSendFile = CreateFile(clientparam->filename, // file to open
+    /*hSendFile = CreateFile(clientparam->filename, // file to open
 		GENERIC_READ,          // open for reading
 		FILE_SHARE_READ,       // share for reading
 		NULL,                  // default security
 		OPEN_EXISTING,         // existing file only
 		FILE_ATTRIBUTE_NORMAL, // normal file
-		NULL);                 // no attr. template
+        NULL);                 // no attr. template*/
 
 	while (true) {
 		if (ReadFile(hSendFile, sendbuff, clientparam->size - 1, &dwBytesRead, NULL) == FALSE)
@@ -108,7 +109,7 @@ DWORD WINAPI ClientSend(LPVOID strucParams) {
 				return TRUE;
 			}
 			else {
-				OutputDebugString("Couldn't read instructions\n");
+                qDebug() << "Couldn't read instructions\n";
 				ClientCleanup(clientparam->sock);
 				return FALSE;
 			}
@@ -142,7 +143,7 @@ void ClientCleanup(SOCKET s) {
 	closesocket(s);
 	CloseHandle(hSendFile);
 	WSACleanup();
-	clientrunning = false;
+    //clientrunning = false;
 }
 
 /*---------------------------------------------------------------------------------------
@@ -174,8 +175,8 @@ void ShowLastErr(bool wsa) {
         dlasterr = GetLastError();
     }
     sprintf_s(errnum, "Error number: %d\n", dlasterr);
-    OutputDebugString(errnum);
+    qDebug() << errnum;
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ARGUMENT_ARRAY | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL, dlasterr, 0, (LPSTR)&errmsg, 0, NULL);
-    OutputDebugString(errmsg);
+        NULL, dlasterr, 0, (LPWSTR)&errmsg, 0, NULL);
+    qDebug() << errmsg;
 }
