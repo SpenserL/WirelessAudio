@@ -2,15 +2,31 @@
 
 //Carson
 AudioManager::AudioManager(QObject * par) : parent(par) {
-  audio = new QAudioOutput(QAudioFormat(), par);
   songState = Stopped;
+  circularBuffer = new CircularBuffer(CIRCULARBUFFERSIZE, BUFFERSIZE, par);
+  //for(int i = 0; i < 100000; i++)
+  //  circularBuffer->pushBack((void*)"1");
+
+  buffer = new QBuffer(parent);
+  //while(circularBuffer->pop(buffer));
+  /*while(circularBuffer->pop(buffer)) {
+    char data[BUFFERSIZE];
+    buffer->seek(0);
+    int size = buffer->read(data, BUFFERSIZE);
+    if (size > 0) {
+        qDebug() << "Message:" << data;
+    }
+  }*/
 }
 
 AudioManager::~AudioManager() {
     delete audio;
+    delete circularBuffer;
+    delete buffer;
 }
 
 void AudioManager::loadSong(QFile * f) {
+    char data[BUFFERSIZE];
     if (songState != Stopped) {
         stop();
     }
@@ -18,8 +34,15 @@ void AudioManager::loadSong(QFile * f) {
     file = f;
     wav_hdr wavHeader;
     file->open(QIODevice::ReadOnly);
+    buffer->open(QIODevice::WriteOnly);
+    //buffer->open(QIODevice::ReadOnly);
     int bytesRead = file->read((char*)&wavHeader, sizeof(wav_hdr));
+    while(file->read(data, BUFFERSIZE) > 0) {
+        circularBuffer->pushBack(data);
+        circularBuffer->pop(buffer);
+    }
     file->close();
+    buffer->close();
     if (bytesRead == -1) {
         qDebug() << "[ERROR] audiomanager.cpp's loadSong()";
         return;
@@ -61,8 +84,8 @@ void AudioManager::skip(float seconds) {
 }
 
 QIODevice * AudioManager::play() {
-    file->open(QIODevice::ReadOnly);
-    device = file;
+    buffer->open(QIODevice::ReadOnly);
+    device = buffer;
     audio->start(device);
     return device;
 }

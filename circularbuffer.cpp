@@ -1,46 +1,50 @@
 #include "circularbuffer.h"
+#include <QDebug>
 
-//Carson
-bool CircularBufferInitialize(CircularBuffer* circularBuffer, int maxLength, int elementLength) {
-    circularBuffer->buffer = malloc(MaxLength* elementLength);
-    if (circularBuffer->buffer == NULL) {
-        return false;
+CircularBuffer::CircularBuffer(int maxLength, int elementLength, QObject* par) : parent(par) {
+    buffer = malloc(maxLength* elementLength);
+    if (buffer == NULL) {
+        return;
     }
-    circularBuffer->bufferEnd = (char*)circularBuffer->buffer + maxLength * elementLength;
-    circularBuffer->maxLength = maxLength;
-    circularBuffer->length = 0;
-    circularBuffer->elementLength = elementLength;
-    circularBuffer->front = circularBuffer->buffer;
-    circularBuffer->back = circularBuffer->buffer;
+    bufferEnd = (char*)buffer + maxLength * elementLength;
+    this->maxLength = maxLength;
+    length = 0;
+    this->elementLength = elementLength;
+    front = buffer;
+    back = buffer;
+}
+
+CircularBuffer::~CircularBuffer() {
+    free(buffer);
+}
+
+bool CircularBuffer::pushBack(void* item) {
+    memcpy(front, item, elementLength);
+    front = (char*)front + elementLength;
+    if (front == bufferEnd) {
+        front = buffer;
+    }
+    ++(length);
     return true;
 }
 
-void CircularBufferFree(CircularBuffer* circularBuffer) {
-    free(circularBuffer->buffer);
-}
+bool CircularBuffer::pop(QBuffer* buf) {
+    char data[BUFFERSIZE] { '\0' };
+    if (length == 0) {
+        return false;
+    }
+    memcpy(data, back, elementLength);
+    back = (char*)back + elementLength;
+    if (back == bufferEnd) {
+        back = buffer;
+    }
+    --(length);
 
-void CircularBufferPushBack(CircularBuffer* circularBuffer, const void* item) {
-    /* Comment this out if we want the head to overwrite the tail */
-    if (circularBuffer->length == circularBuffer->maxLength) {
-        return;
-    }
-
-    memcpy(circularBuffer->front, item, circularBuffer->elementLength);
-    circularBuffer->front = (char*)circularBuffer->front + circularBuffer->elementLength;
-    if (circularBuffer->front == circularBuffer->bufferEnd) {
-        circularBuffer->front = circularBuffer->buffer;
-    }
-    ++(circularBuffer->length);
-}
-
-void CircularBufferPop(CircularBuffer* circularBuffer, void* item) {
-    if (circularBuffer->length == 0) {
-        return;
-    }
-    memcpy(item, circularBuffer->back, circularBuffer->elementLength);
-    circularBuffer->back = (char*)circularBuffer->back + circularBuffer->elementLength;
-    if (circularBuffer->back == circularBuffer->bufferEnd) {
-        circularBuffer->back = circularBuffer->buffer;
-    }
-    --(circularBuffer->length);
+    buf->open(QIODevice::WriteOnly);
+    qint64 curPos = buf->pos();
+    buf->seek(buf->size());
+    qDebug() << buf->write(data, BUFFERSIZE);
+    buf->seek(curPos);
+    buf->close();
+    return true;
 }

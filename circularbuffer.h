@@ -3,9 +3,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <QBuffer>
+
+#define BUFFERSIZE 512
+#define CIRCULARBUFFERSIZE 100000
 
 //Carson
-struct CircularBuffer {
+class CircularBuffer {
+public:
     int	maxLength;
     int	length;
     int	elementLength;
@@ -13,11 +18,14 @@ struct CircularBuffer {
     void* bufferEnd;
     void* front;
     void* back;
+    QObject* parent;
+
+    CircularBuffer(int maxLength, int elementLength, QObject* parent);
+    ~CircularBuffer();
+    bool pushBack(void* item);
+    bool pop(QBuffer* buffer);
 };
 
-bool CircularBufferInitialize(CircularBuffer* circularBuffer, int maxLength, int elementLength);
-void CircularBufferFree(CircularBuffer* circularBuffer);
-void CircularBufferPushBack(CircularBuffer* circularBuffer, const void* item);
-void CircularBufferPop(CircularBuffer* circularBuffer, void* item);
+
 
 #endif // CIRCULARBUFFER_H

@@ -7,6 +7,7 @@
 #include <QDebug>
 #include "wavheader.h"
 #include "songstate.h"
+#include "circularbuffer.h"
 
 //Carson
 class AudioManager {
@@ -30,6 +31,8 @@ private:
     QIODevice *device;
     float volume = 10;
     SongState songState;
+    CircularBuffer *circularBuffer;
+    QBuffer *buffer;
 };
 
 #endif // AUDIOMANAGER_H
