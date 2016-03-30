@@ -14,14 +14,17 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    audiomanager.cpp
+    audiomanager.cpp \
+    Client.cpp
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
     wavheader.h \
-    songstate.h
+    songstate.h \
+    Client.h
 
 FORMS    += mainwindow.ui
 
 DISTFILES += \
-    test.wav
+    test.wav \
+    instructions.txt

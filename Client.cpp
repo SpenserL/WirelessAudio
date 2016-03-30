@@ -2,19 +2,16 @@
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
+
 #include <winsock2.h>
 #include <stdio.h>
-#include "Globals.h"
+#include "Client.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
-///////////////////// Prototypes //////////////////////////
-void ClientCleanup(SOCKET s);
-
 //////////////////// Globals //////////////////////////////
 HANDLE hSendFile;
-struct sockaddr_in server, client;
-SOCKET sClient;
+struct sockaddr_in client;
 
 int ClientSetup(bool tcp) {
 	WSADATA WSAData;
@@ -145,4 +142,39 @@ void ClientCleanup(SOCKET s) {
 	CloseHandle(hSendFile);
 	WSACleanup();
 	clientrunning = false;
+}
+
+/*---------------------------------------------------------------------------------------
+--	FUNCTION:		void ShowLastErr()
+
+--
+--	DATE:			January 19, 2016
+--
+--	REVISIONS:		February 13, 2016
+--
+--	DESIGNERS:		Micah Willems
+--
+--	PROGRAMMER:		Micah Willems
+--
+--	NOTES:
+--      This is a universal-purpose error reporting function for functions that can be
+--		error checked using GetLastError. It uses FormatMessage to get an actual
+--		human-readable, understandable string from the error ID and outputs it to the
+--		Debug output console in the IDE.
+---------------------------------------------------------------------------------------*/
+void ShowLastErr(bool wsa) {
+    DWORD dlasterr;
+    LPCTSTR errmsg = NULL;
+    char errnum[100];
+    if (wsa = true) {
+        dlasterr = WSAGetLastError();
+    }
+    else {
+        dlasterr = GetLastError();
+    }
+    sprintf_s(errnum, "Error number: %d\n", dlasterr);
+    OutputDebugString(errnum);
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ARGUMENT_ARRAY | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, dlasterr, 0, (LPSTR)&errmsg, 0, NULL);
+    OutputDebugString(errmsg);
 }
