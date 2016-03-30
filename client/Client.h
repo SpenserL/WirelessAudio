@@ -11,21 +11,11 @@ DWORD WINAPI ClientSend(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);
 
 ///////////////////// Macros //////////////////////////////
-#define SERVER_DEFAULT_PORT	7000
-#define FILENAMESIZE		100
-#define ERRORSIZE			512
-#define KBYTES540		4423680
-
-///////////// Global Structure Definitions ////////////////
-struct ClientParams {
-    bool tcp;
-    char filename[FILENAMESIZE];
-    int numpackets;
-    long size;
-    SOCKET sock;
-    struct sockaddr_in server;
-    WSAEVENT accept;
-};
+#define SERVER_DEFAULT_PORT     7000
+#define FILENAMESIZE            100
+#define ERRORSIZE               512
+#define KBYTES540               4423680
+#define CLIENT_PACKET_SIZE      4423680
 
 typedef struct _SOCKET_INFORMATION {
     OVERLAPPED Overlapped;
@@ -37,6 +27,7 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 ///////////////////// Global Variables ////////////////////
+SOCKET clientSock;
 char address[100];
 SOCKET sClient, listensock, AcceptSocket;
 struct sockaddr_in server;

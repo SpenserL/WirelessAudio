@@ -80,58 +80,49 @@ int ClientSetup(bool tcp) {
 	return 0;
 }
 
-DWORD WINAPI ClientSend(LPVOID strucParams) {
-	struct ClientParams *clientparam = (struct ClientParams *) strucParams;
-	char *sendbuff = new char[clientparam->size];
+DWORD WINAPI ClientSend() {
+    char *sendbuff = new char[CLIENT_PACKET_SIZE];
 	DWORD  dwBytesRead;
 	int sentBytes;
-	int sentpackets = 0;
-    struct sockaddr_in sockadd = clientparam->server;
+    int sentpackets = 0;
 
     /*hSendFile = CreateFile(clientparam->filename, // file to open
-		GENERIC_READ,          // open for reading
-		FILE_SHARE_READ,       // share for reading
-		NULL,                  // default security
-		OPEN_EXISTING,         // existing file only
-		FILE_ATTRIBUTE_NORMAL, // normal file
+        GENERIC_READ,          // open for reading
+        FILE_SHARE_READ,       // share for reading
+        NULL,                  // default security
+        OPEN_EXISTING,         // existing file only
+        FILE_ATTRIBUTE_NORMAL, // normal file
         NULL);                 // no attr. template*/
 
 	while (true) {
-		if (ReadFile(hSendFile, sendbuff, clientparam->size - 1, &dwBytesRead, NULL) == FALSE)
+        if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE - 1, &dwBytesRead, NULL) == FALSE)
 		{
-			if (sentpackets < clientparam->numpackets && clientparam->numpackets != 1) {
-				SetFilePointer(hSendFile, 0, NULL, FILE_BEGIN);
-			}
-			else if (dwBytesRead == 0) {
-				ClientCleanup(clientparam->sock);
+            if (dwBytesRead == 0) {
+                qDebug() << "End of file";
+                ClientCleanup(clientSock);
 				return TRUE;
 			}
-			else {
-                qDebug() << "Couldn't read instructions\n";
-				ClientCleanup(clientparam->sock);
+            else {
+                qDebug() << "Couldn't read file\n";
+                ClientCleanup(clientSock);
 				return FALSE;
 			}
 		}
 
-		if (dwBytesRead > 0 && dwBytesRead < (DWORD)clientparam->size - 1)
+        if (dwBytesRead > 0 && dwBytesRead < (DWORD)CLIENT_PACKET_SIZE - 1)
 		{
 			sendbuff[dwBytesRead] = '\0';
 		}
 
-		if (clientparam->tcp) {
-			sentBytes = send(clientparam->sock, sendbuff, clientparam->size, 0);
-			ShowLastErr(true);
-			sentpackets++;
-		}
-		else {
-			sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
-			ShowLastErr(true);
-			sentpackets++;
-		}
-		if (sentpackets > clientparam->numpackets && clientparam->numpackets != 1) {
-			ClientCleanup(clientparam->sock);
-			return TRUE;
-		}
+        // TCP Send
+        sentBytes = send(clientSock, sendbuff, CLIENT_PACKET_SIZE, 0);
+        ShowLastErr(true);
+        sentpackets++;
+
+        // UDP send (if needed in future)
+        //sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
+        //ShowLastErr(true);
+        //sentpackets++;
 	}
 	
 	return TRUE;
