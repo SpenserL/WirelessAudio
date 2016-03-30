@@ -38,6 +38,7 @@ void AudioManager::loadSong(QFile * f) {
 
 void AudioManager::receivedWavHeader(wav_hdr wavHeader) {
     qDebug() << "Received Header";
+    bytesPerSecond = wavHeader.bytesPerSec;
     format.setSampleRate(wavHeader.SamplesPerSec);
     format.setChannelCount(wavHeader.NumOfChan);
     format.setSampleSize(wavHeader.bitsPerSample);
@@ -71,7 +72,15 @@ void AudioManager::stop() {
 }
 
 void AudioManager::skip(float seconds) {
-
+    //pause();
+    int curPos = buffer->pos();
+    int newPos = curPos + seconds * bytesPerSecond;
+    if (newPos < 0)
+        newPos = 0;
+    if (newPos > buffer->size()-2)
+        newPos = buffer->size()-2;
+    buffer->seek(newPos);
+    //resume();
 }
 
 QIODevice * AudioManager::play() {

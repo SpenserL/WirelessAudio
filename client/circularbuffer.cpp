@@ -29,20 +29,19 @@ bool CircularBuffer::pushBack(void* item) {
 }
 
 bool CircularBuffer::pop(QBuffer* buf) {
-    char data[BUFFERSIZE] { '\0' };
     if (length == 0) {
         return false;
     }
-    memcpy(data, back, elementLength);
+
+    qint64 curPos = buf->pos();
+    buf->seek(buf->size());
+    buf->write((const char *)back, BUFFERSIZE);
+    buf->seek(curPos);
+
     back = (char*)back + elementLength;
     if (back == bufferEnd) {
         back = buffer;
     }
     --(length);
-
-    qint64 curPos = buf->pos();
-    buf->seek(buf->size());
-    buf->write(data, BUFFERSIZE);
-    buf->seek(curPos);
     return true;
 }
