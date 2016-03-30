@@ -10,13 +10,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = WirelessAudioServer
 TEMPLATE = app
-
+LIBS = -lws2_32
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    server.cpp
+    Server.cpp
 
 HEADERS  += mainwindow.h \
-    server.h
+    Server.h
 
 FORMS    += mainwindow.ui
