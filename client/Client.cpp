@@ -86,9 +86,7 @@ DWORD WINAPI ClientSend(LPVOID strucParams) {
 	DWORD  dwBytesRead;
 	int sentBytes;
 	int sentpackets = 0;
-	struct sockaddr_in sockadd = clientparam->server;
-
-    //clientrunning = true;
+    struct sockaddr_in sockadd = clientparam->server;
 
     /*hSendFile = CreateFile(clientparam->filename, // file to open
 		GENERIC_READ,          // open for reading
@@ -142,8 +140,7 @@ DWORD WINAPI ClientSend(LPVOID strucParams) {
 void ClientCleanup(SOCKET s) {
 	closesocket(s);
 	CloseHandle(hSendFile);
-	WSACleanup();
-    //clientrunning = false;
+    WSACleanup();
 }
 
 /*---------------------------------------------------------------------------------------
