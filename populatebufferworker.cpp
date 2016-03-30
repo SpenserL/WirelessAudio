@@ -9,9 +9,10 @@ void PopulateBufferWorker::doWork() {
     buffer->open(QIODevice::ReadWrite);
     qDebug() << "PopulateBufferWorker doWork Enter";
     while(true) {
-        if (buffer->size() - buffer->pos() < BUFFERSIZE * 10) {
+        //while (buffer->size() - buffer->pos() < BUFFERSIZE * 10) {
             circularBuffer->pop(buffer);
-        }
+        //}
+        qDebug() << buffer->pos();
     }
     qDebug() << "PopulateBufferWorker doWork Exit";
     buffer->close();

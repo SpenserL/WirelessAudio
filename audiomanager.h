@@ -44,6 +44,7 @@ private:
     PopulateBufferWorker *populateBufferWorker;
     QThread readWorkerThread;
     QThread populateBufferThread;
+    int bytesPerSecond;
 };
 
 #endif // AUDIOMANAGER_H
