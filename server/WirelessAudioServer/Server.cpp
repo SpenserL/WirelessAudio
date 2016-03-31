@@ -2,12 +2,20 @@
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
-#include <winsock2.h>
 #include <stdio.h>
 #include <QDebug>
 #include "Server.h"
 
-int ServerSetup(bool tcp) {
+////////// "Real" of the externs in Server.h ///////////////
+char address[100];
+SOCKET sClient, listensock, AcceptSocket;
+struct sockaddr_in server;
+WSAEVENT AcceptEvent;
+HANDLE hSendFile, hServ, hLog;
+LPSOCKET_INFORMATION SI;
+char errmsg[ERRORSIZE];
+
+int ServerSetup() {
 
     //OPENFILENAME ofnsv;
     //char filenameserver[FILENAMESIZE];
@@ -55,22 +63,22 @@ int ServerSetup(bool tcp) {
 		return -1;
 	}
 
-	if (tcp) {
-		if ((listensock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
-			WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
-			sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
-            qDebug() << errmsg;
-			return -1;
-		}
-	}
-	else {
-		if ((listensock = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
-			WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
-			sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
-            qDebug() << errmsg;
-			return -1;
-		}
-	}
+    // TCP create WSA socket
+    if ((listensock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
+        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
+        sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
+        qDebug() << errmsg;
+        return -1;
+    }
+
+    // UDP create WSA socket (if needed in future) ///////////////////////////////
+    /*if ((listensock = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
+        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
+        sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
+        qDebug() << errmsg;
+        return -1;
+    }*/
+
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -83,14 +91,13 @@ int ServerSetup(bool tcp) {
         qDebug() << errmsg;
 		return -1;
 	}
-	if (tcp) {
-		if (listen(listensock, 5))
-		{
-			sprintf_s(errmsg, "listen() failed with error %d\n", WSAGetLastError());
-            qDebug() << errmsg;
-			return -1;
-		}
-	}
+    // TCP listen on socket (no corresponding UDP call)
+    if (listen(listensock, 5))
+    {
+        sprintf_s(errmsg, "listen() failed with error %d\n", WSAGetLastError());
+        qDebug() << errmsg;
+        return -1;
+    }
 
 	if ((AcceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
 	{
@@ -190,32 +197,31 @@ DWORD WINAPI ServerThread(LPVOID lpParameter) {
 
 		
 		Flags = 0;
-		if (tcp) {
-			if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
-				&(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
-			{
-				ShowLastErr(true);
-				if (WSAGetLastError() != WSA_IO_PENDING)
-				{
-					sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
-                    qDebug() << errmsg;
-					return FALSE;
-				}
-			}
-		}
-		else {
-			if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
-				(SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
-			{
-				ShowLastErr(true);
-				if (WSAGetLastError() != WSA_IO_PENDING)
-				{
-					sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
-                    qDebug() << errmsg;
-					return FALSE;
-				}
-			}
-		}
+        // TCP WSA receive
+        if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
+            &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
+        {
+            ShowLastErr(true);
+            if (WSAGetLastError() != WSA_IO_PENDING)
+            {
+                sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+                qDebug() << errmsg;
+                return FALSE;
+            }
+        }
+
+        // UDP WSA receive (if needed in future) //////////////////////////////////
+        /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
+            (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
+        {
+            ShowLastErr(true);
+            if (WSAGetLastError() != WSA_IO_PENDING)
+            {
+                sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+                qDebug() << errmsg;
+                return FALSE;
+            }
+        }*/
 	}
 
 	return TRUE;

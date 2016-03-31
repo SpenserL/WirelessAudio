@@ -1,6 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <winsock2.h>
 #include <Windows.h>
 
 ///////////////////// Macros //////////////////////////////
@@ -30,14 +31,13 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 ///////////////////// Global Variables ////////////////////
-char address[100];
-SOCKET sClient, listensock, AcceptSocket;
-struct sockaddr_in server;
-WSAEVENT AcceptEvent;
-HANDLE hSendFile, hServ, hLog;
-LPSOCKET_INFORMATION SI;
-bool tcp;
-char errmsg[ERRORSIZE];
+extern char address[100];
+extern SOCKET sClient, listensock, AcceptSocket;
+extern struct sockaddr_in server;
+extern WSAEVENT AcceptEvent;
+extern HANDLE hSendFile, hServ, hLog;
+extern LPSOCKET_INFORMATION SI;
+extern char errmsg[ERRORSIZE];
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
