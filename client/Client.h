@@ -1,11 +1,12 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <winsock2.h>
 #include <windows.h>
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
-int ClientSetup(bool tcp);
+int ClientSetup();
 void ClientCleanup(SOCKET s);
 DWORD WINAPI ClientSend(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);
@@ -27,12 +28,12 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 ///////////////////// Global Variables ////////////////////
-SOCKET clientSock;
-char address[100];
-SOCKET sClient, listensock, AcceptSocket;
-struct sockaddr_in server;
-WSAEVENT AcceptEvent;
-LPSOCKET_INFORMATION SI;
-char errmsg[ERRORSIZE];
+extern SOCKET clientSock;
+extern char address[100];
+extern SOCKET sClient, listensock, AcceptSocket;
+extern struct sockaddr_in server;
+extern WSAEVENT AcceptEvent;
+extern LPSOCKET_INFORMATION SI;
+extern char errmsg[ERRORSIZE];
 
 #endif

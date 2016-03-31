@@ -4,7 +4,6 @@
 #endif
 
 //#include <Ws2tcpip.h>
-#include <winsock2.h>
 #include <stdio.h>
 #include <QDebug>
 #include "Client.h"
@@ -15,7 +14,16 @@
 HANDLE hSendFile;
 struct sockaddr_in client;
 
-int ClientSetup(bool tcp) {
+////////// "Real" of the externs in Client.h ///////////////
+SOCKET clientSock;
+char address[100];
+SOCKET sClient, listensock, AcceptSocket;
+struct sockaddr_in server;
+WSAEVENT AcceptEvent;
+LPSOCKET_INFORMATION SI;
+char errmsg[ERRORSIZE];
+
+int ClientSetup() {
 	WSADATA WSAData;
 	WORD wVersionRequested;
 	struct hostent	*hp;
@@ -27,20 +35,19 @@ int ClientSetup(bool tcp) {
 		return -1;
 	}
 
-	if (tcp) {
-		if ((sClient = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-		{
-            qDebug() << "Cannot create tcp socket\n";
-			return -1;
-		}
-	}
-	else {
-		if ((sClient = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-		{
-            qDebug() << "Cannot create udp socket\n";
-			return -1;
-		}
-	}
+    // TCP Open Socket
+    if ((sClient = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        qDebug() << "Cannot create tcp socket\n";
+        return -1;
+    }
+
+    // UDP Open Socket (if needed in future) ////////////////////
+    /*if ((sClient = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        qDebug() << "Cannot create udp socket\n";
+        return -1;
+    }*/
 
 	// Initialize and set up the address structure
 	memset((char *)&server, 0, sizeof(struct sockaddr_in));
@@ -55,28 +62,29 @@ int ClientSetup(bool tcp) {
 	// Copy the server address
 	memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
 
-	if (tcp) {
-		// Connecting to the server
-		if (connect(sClient, (struct sockaddr *)&server, sizeof(server)) == -1)
-		{
-            qDebug() << "Can't connect to server\n";
-			ShowLastErr(true);
-			return -1;
-		}
-	} else {
-		// Bind local address to the socket
-		memset((char *)&client, 0, sizeof(client));
-		client.sin_family = AF_INET;
-		client.sin_port = htons(0);  // bind to any available port
-		client.sin_addr.s_addr = htonl(INADDR_ANY);
+	
+    // TCP Connecting to the server
+    if (connect(sClient, (struct sockaddr *)&server, sizeof(server)) == -1)
+    {
+        qDebug() << "Can't connect to server\n";
+        ShowLastErr(true);
+        return -1;
+    }
 
-		if (bind(sClient, (struct sockaddr *)&client, sizeof(client)) == -1)
-		{
-			perror("Can't bind name to socket");
-			return -1;
-		}
-	}
+    // UDP Connecting to the server (if needed in future) /////////////
+    // Bind local address to the socket
+    /*memset((char *)&client, 0, sizeof(client));
+    client.sin_family = AF_INET;
+    client.sin_port = htons(0);  // bind to any available port
+    client.sin_addr.s_addr = htonl(INADDR_ANY);
 
+    if (bind(sClient, (struct sockaddr *)&client, sizeof(client)) == -1)
+    {
+        perror("Can't bind name to socket");
+        return -1;
+    }*/
+
+    qDebug() << "Setup success";
 	return 0;
 }
 
@@ -119,7 +127,7 @@ DWORD WINAPI ClientSend() {
         ShowLastErr(true);
         sentpackets++;
 
-        // UDP send (if needed in future)
+        // UDP send (if needed in future) //////////////////////
         //sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
         //ShowLastErr(true);
         //sentpackets++;
