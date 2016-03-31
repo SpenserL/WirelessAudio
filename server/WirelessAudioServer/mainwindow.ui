@@ -30,6 +30,16 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QLineEdit" name="ipAddr">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>100</y>
+      <width>113</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
