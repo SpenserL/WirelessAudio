@@ -41,7 +41,7 @@ char errmsg[ERRORSIZE];
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
-int ServerSetup(bool tcp);
+int ServerSetup();
 DWORD WINAPI ServerListen(LPVOID lpParameter);
 void ServerCleanup();
 DWORD WINAPI ServerThread(LPVOID lpParameter);
