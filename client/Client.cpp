@@ -23,10 +23,11 @@ WSAEVENT AcceptEvent;
 LPSOCKET_INFORMATION SI;
 char errmsg[ERRORSIZE];
 
-int ClientSetup() {
+int ClientSetup(char* addr) {
 	WSADATA WSAData;
 	WORD wVersionRequested;
 	struct hostent	*hp;
+    strcpy(address, addr);
 
 	wVersionRequested = MAKEWORD(2, 2);
 	if (WSAStartup(wVersionRequested, &WSAData) != 0) {

@@ -17,12 +17,12 @@ char errmsg[ERRORSIZE];
 
 int ServerSetup() {
 
+
     //OPENFILENAME ofnsv;
     //char filenameserver[FILENAMESIZE];
 	int ret;
 	WSADATA wsaData;
-	SOCKADDR_IN InternetAddr;
-
+    SOCKADDR_IN InternetAddr;
     /*ZeroMemory(&ofnsv, sizeof(ofnsv));
 	ofnsv.lStructSize = sizeof(ofnsv);
 	ofnsv.hwndOwner = NULL;
@@ -71,7 +71,7 @@ int ServerSetup() {
         return -1;
     }
 
-    // UDP create WSA socket (if needed in future) ///////////////////////////////
+    // UDP create WSA socket (if needed in future) ////////////////////////
     /*if ((listensock = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
         WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
         sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
@@ -105,6 +105,8 @@ int ServerSetup() {
         qDebug() << errmsg;
 		return -1;
 	}
+
+    qDebug() << "Success!";
 	return 0;
 }
 

@@ -17,5 +17,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_clicked()
 {
+    qDebug() << "Clicked connect";
     ServerSetup();
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    qDebug() << "Clicked disconnect";
+    ServerCleanup();
 }

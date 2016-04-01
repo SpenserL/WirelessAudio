@@ -6,7 +6,7 @@
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
-int ClientSetup();
+int ClientSetup(char* addr);
 void ClientCleanup(SOCKET s);
 DWORD WINAPI ClientSend(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);

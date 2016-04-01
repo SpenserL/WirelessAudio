@@ -1,10 +1,15 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "Client.h"
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-    audioManager = new AudioManager(this);
+    //audioManager = new AudioManager(this);
+    QRegExp regex;
+    regex.setPattern("^(([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))\\.){3}([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))$");
+    QValidator* val = new QRegExpValidator(regex, this);
+    ui->ipAddr->setValidator(val);
 }
 
 MainWindow::~MainWindow() {
@@ -42,5 +47,6 @@ void MainWindow::on_skipBackwardsButton_released()
 
 void MainWindow::on_actionConnect_triggered()
 {
-    ClientSetup();
+    qDebug() << "Clicked";
+    ClientSetup(ui->ipAddr->text().toLatin1().data());
 }
