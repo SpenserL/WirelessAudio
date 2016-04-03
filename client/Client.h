@@ -7,8 +7,9 @@
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
 int ClientSetup(char* addr);
-void ClientCleanup(SOCKET s);
-DWORD WINAPI ClientSend(LPVOID lpParameter);
+void ClientCleanup();
+int ClientSend(HANDLE hFile);
+DWORD WINAPI ClientSendThread(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);
 
 ///////////////////// Macros //////////////////////////////
@@ -28,12 +29,9 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 ///////////////////// Global Variables ////////////////////
-extern SOCKET clientSock;
 extern char address[100];
-extern SOCKET sClient, listensock, AcceptSocket;
+extern SOCKET sendSock;
 extern struct sockaddr_in server;
-extern WSAEVENT AcceptEvent;
-extern LPSOCKET_INFORMATION SI;
-extern char errmsg[ERRORSIZE];
+extern char errMsg[ERRORSIZE];
 
 #endif

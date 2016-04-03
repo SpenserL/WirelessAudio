@@ -8,74 +8,40 @@
 
 ////////// "Real" of the externs in Server.h ///////////////
 char address[100];
-SOCKET sClient, listensock, AcceptSocket;
+SOCKET listenSock, acceptSock;
 struct sockaddr_in server;
-WSAEVENT AcceptEvent;
-HANDLE hSendFile, hServ, hLog;
+WSAEVENT acceptEvent;
+HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
-char errmsg[ERRORSIZE];
+char errMsg[ERRORSIZE];
 
 int ServerSetup() {
 
-
-    //OPENFILENAME ofnsv;
-    //char filenameserver[FILENAMESIZE];
 	int ret;
 	WSADATA wsaData;
     SOCKADDR_IN InternetAddr;
-    /*ZeroMemory(&ofnsv, sizeof(ofnsv));
-	ofnsv.lStructSize = sizeof(ofnsv);
-	ofnsv.hwndOwner = NULL;
-    ofnsv.lpstrFile = (LPWSTR) filenameserver;
-	ofnsv.lpstrFile[0] = '\0';
-	ofnsv.nMaxFile = sizeof(filenameserver);
-	ofnsv.lpstrFilter = TEXT("Text files (.txt)\0*.TXT\0\0");
-	ofnsv.nFilterIndex = 1;
-	ofnsv.lpstrFileTitle = NULL;
-	ofnsv.nMaxFileTitle = 0;
-	ofnsv.lpstrInitialDir = NULL;
-	ofnsv.Flags = OFN_HIDEREADONLY | OFN_NOCHANGEDIR | OFN_NOLONGNAMES | OFN_OVERWRITEPROMPT;
-	if (GetSaveFileName(&ofnsv) == 0) {
-		return 0;
-	}
-
-    hServ = CreateFile(filenameserver, // file to open
-		GENERIC_WRITE,          // open for reading
-		FILE_SHARE_READ,       // share for reading
-		NULL,                  // default security
-		CREATE_ALWAYS,         // existing file only
-		FILE_ATTRIBUTE_NORMAL, // normal file
-		NULL);                 // no attr. template
-
-	hLog = CreateFile("log.txt", // file to open
-		GENERIC_WRITE,          // open for reading
-		FILE_SHARE_READ,       // share for reading
-		NULL,                  // default security
-		CREATE_ALWAYS,         // existing file only
-		FILE_ATTRIBUTE_NORMAL, // normal file
-        NULL);                 // no attr. template*/
 
 	if ((ret = WSAStartup(0x0202, &wsaData)) != 0)
 	{
-		sprintf_s(errmsg, ERRORSIZE, "WSAStartup failed with error %d\n", ret);
-        qDebug() << errmsg;
+        sprintf_s(errMsg, ERRORSIZE, "WSAStartup failed with error %d\n", ret);
+        qDebug() << errMsg;
 		WSACleanup();
 		return -1;
 	}
 
     // TCP create WSA socket
-    if ((listensock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
+    if ((listenSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
         WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
-        sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "Failed to get a socket %d\n", WSAGetLastError());
+        qDebug() << errMsg;
         return -1;
     }
 
     // UDP create WSA socket (if needed in future) ////////////////////////
-    /*if ((listensock = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
+    /*if ((listenSock = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
         WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
-        sprintf_s(errmsg, "Failed to get a socket %d\n", WSAGetLastError());
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "Failed to get a socket %d\n", WSAGetLastError());
+        qDebug() << errMsg;
         return -1;
     }*/
 
@@ -84,25 +50,25 @@ int ServerSetup() {
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	InternetAddr.sin_port = htons(SERVER_DEFAULT_PORT);
 
-	if (bind(listensock, (PSOCKADDR)&InternetAddr,
+    if (bind(listenSock, (PSOCKADDR)&InternetAddr,
 		sizeof(InternetAddr)) == SOCKET_ERROR)
 	{
-		sprintf_s(errmsg, "bind() failed with error %d\n", WSAGetLastError());
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "bind() failed with error %d\n", WSAGetLastError());
+        qDebug() << errMsg;
 		return -1;
 	}
     // TCP listen on socket (no corresponding UDP call)
-    if (listen(listensock, 5))
+    if (listen(listenSock, 5))
     {
-        sprintf_s(errmsg, "listen() failed with error %d\n", WSAGetLastError());
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "listen() failed with error %d\n", WSAGetLastError());
+        qDebug() << errMsg;
         return -1;
     }
 
-	if ((AcceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
+    if ((acceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
 	{
-		sprintf_s(errmsg, "WSACreateEvent() failed with error %d\n", WSAGetLastError());
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "WSACreateEvent() failed with error %d\n", WSAGetLastError());
+        qDebug() << errMsg;
 		return -1;
 	}
 
@@ -110,47 +76,55 @@ int ServerSetup() {
 	return 0;
 }
 
-DWORD WINAPI ServerListen(LPVOID lpParameter) {
-	HANDLE hThread;
-	DWORD ThreadId, tmprcv;
-	struct ClientParams *serverparam = (struct ClientParams *) lpParameter;
-	char buff[2];
-	WSABUF bufftmp;
-	bufftmp.buf = buff;
-	bufftmp.len = 2;
+int ServerListen(HANDLE hFile) {
+    HANDLE hThread;
+    DWORD ThreadId;
 
-	if ((hThread = CreateThread(NULL, 0, ServerThread, (LPVOID)serverparam->accept, 0, &ThreadId)) == NULL)
+    if ((hThread = CreateThread(NULL, 0, ServerListenThread, (LPVOID) hFile, 0, &ThreadId)) == NULL)
+    {
+        printf("Create ServerListenThread failed with error %lu\n", GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+DWORD WINAPI ServerListenThread(LPVOID lpParameter) {
+	HANDLE hThread;
+    DWORD ThreadId;
+
+    if ((hThread = CreateThread(NULL, 0, ServerReceiveThread, lpParameter, 0, &ThreadId)) == NULL)
 	{
-		printf("CreateThread failed with error %d\n", GetLastError());
+        printf("Create ServerReceiveThread failed with error %lu\n", GetLastError());
 		return FALSE;
 	}
 
 	while (TRUE)
 	{
-		AcceptSocket = accept(serverparam->sock, NULL, NULL);
+        acceptSock = accept(listenSock, NULL, NULL);
 
-		if (WSASetEvent(AcceptEvent) == FALSE)
+        if (WSASetEvent(acceptEvent) == FALSE)
 		{
-			sprintf_s(errmsg, "WSASetEvent failed with error %d\n", WSAGetLastError());
-            qDebug() << errmsg;
+            sprintf_s(errMsg, "WSASetEvent failed with error %d\n", WSAGetLastError());
+            qDebug() << errMsg;
 			return FALSE;
 		}
 	}
 	return TRUE;
 }
 
-DWORD WINAPI ServerThread(LPVOID lpParameter) {
+DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 	DWORD Flags;
+    WSAEVENT repeatEvent;
 	WSAEVENT EventArray[1];
 	DWORD Index;
 	DWORD RecvBytes;
-	LPSOCKET_INFORMATION SocketInfo;
-	struct sockaddr_in ClientAddr;
-    int clientaddrsize = sizeof(ClientAddr);
+    LPSOCKET_INFORMATION SocketInfo;
+
+    hReceiveFile = (HANDLE) lpParameter;
 
 	// Save the accept event in the event array.
 
-	EventArray[0] = (WSAEVENT)lpParameter;
+    EventArray[0] = repeatEvent;
 
 	while (TRUE)
 	{
@@ -180,22 +154,22 @@ DWORD WINAPI ServerThread(LPVOID lpParameter) {
 		if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR,
 			sizeof(SOCKET_INFORMATION))) == NULL)
 		{
-			sprintf_s(errmsg, "GlobalAlloc() failed with error %d\n", GetLastError());
-            qDebug() << errmsg;
+            sprintf_s(errMsg, "GlobalAlloc() failed with error %d\n", GetLastError());
+            qDebug() << errMsg;
 			return FALSE;
 		}
 
 		// Fill in the details of our accepted socket.
 
-		SocketInfo->Socket = AcceptSocket;
+        SocketInfo->Socket = acceptSock;
 		ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
 		SocketInfo->BytesSEND = 0;
 		SocketInfo->BytesRECV = 0;
 		SocketInfo->DataBuf.len = KBYTES540;
 		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 
-		sprintf_s(errmsg, "Socket %d connected\n", AcceptSocket);
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "Socket %d connected\n", acceptSock);
+        qDebug() << errMsg;
 
 		
 		Flags = 0;
@@ -206,8 +180,8 @@ DWORD WINAPI ServerThread(LPVOID lpParameter) {
             ShowLastErr(true);
             if (WSAGetLastError() != WSA_IO_PENDING)
             {
-                sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
-                qDebug() << errmsg;
+                sprintf_s(errMsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+                qDebug() << errMsg;
                 return FALSE;
             }
         }
@@ -219,8 +193,8 @@ DWORD WINAPI ServerThread(LPVOID lpParameter) {
             ShowLastErr(true);
             if (WSAGetLastError() != WSA_IO_PENDING)
             {
-                sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
-                qDebug() << errmsg;
+                sprintf_s(errMsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+                qDebug() << errMsg;
                 return FALSE;
             }
         }*/
@@ -241,14 +215,14 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 
 	if (Error != 0)
 	{
-		sprintf_s(errmsg, "I/O operation failed with error %d\n", Error);
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "I/O operation failed with error %d\n", Error);
+        qDebug() << errMsg;
 	}
 
 	if (BytesTransferred == 0)
 	{
-		sprintf_s(errmsg, "Closing socket %d\n", SI->Socket);
-        qDebug() << errmsg;
+        sprintf_s(errMsg, "Closing socket %d\n", SI->Socket);
+        qDebug() << errMsg;
 	}
 
 	if (Error != 0 || BytesTransferred == 0)
@@ -258,10 +232,10 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 		return;
 	}
 
-	sprintf_s(errmsg, "Bytes received: %d\n", BytesTransferred);
-    qDebug() << errmsg;
+    sprintf_s(errMsg, "Bytes received: %d\n", BytesTransferred);
+    qDebug() << errMsg;
 
-	if (WriteFile(hServ, writebuff, BytesTransferred, &byteswrittenfile, NULL) == FALSE) {
+    if (WriteFile(hReceiveFile, writebuff, BytesTransferred, &byteswrittenfile, NULL) == FALSE) {
         qDebug() << "Couldn't write to server file\n";
 		ShowLastErr(false);
 	}
@@ -277,15 +251,26 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	{
 		if (WSAGetLastError() != WSA_IO_PENDING)
 		{
-			sprintf_s(errmsg, "WSARecv() failed with error %d\n", WSAGetLastError());
-            qDebug() << errmsg;
+            sprintf_s(errMsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+            qDebug() << errMsg;
 			return;
 		}
 	}
 }
 
 void ServerCleanup() {
-	CloseHandle(hServ);
+    qDebug() << "ListenSock closed";
+    closesocket(listenSock);
+    if (acceptSock) {
+        qDebug() << "AcceptSock closed";
+        closesocket(acceptSock);
+    }
+    if (hReceiveFile) {
+        qDebug() << "File handle closed";
+        CloseHandle(hReceiveFile);
+    }
+    qDebug() << "WSACleanup called";
+    WSACleanup();
 }
 
 /*---------------------------------------------------------------------------------------
@@ -308,9 +293,9 @@ void ServerCleanup() {
 ---------------------------------------------------------------------------------------*/
 void ShowLastErr(bool wsa) {
     DWORD dlasterr;
-    LPCTSTR errmsg = NULL;
+    LPCTSTR errMsg = NULL;
     char errnum[100];
-    if (wsa = true) {
+    if (wsa == true) {
         dlasterr = WSAGetLastError();
     }
     else {
@@ -319,6 +304,6 @@ void ShowLastErr(bool wsa) {
     sprintf_s(errnum, "Error number: %d\n", dlasterr);
     qDebug() << errnum;
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ARGUMENT_ARRAY | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL, dlasterr, 0, (LPWSTR)&errmsg, 0, NULL);
-    qDebug() << errmsg;
+        NULL, dlasterr, 0, (LPWSTR)&errMsg, 0, NULL);
+    qDebug() << errMsg;
 }

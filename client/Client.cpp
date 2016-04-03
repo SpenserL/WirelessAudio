@@ -8,20 +8,16 @@
 #include <QDebug>
 #include "Client.h"
 
-#pragma comment(lib, "Ws2_32.lib")
-
-//////////////////// Globals //////////////////////////////
-HANDLE hSendFile;
-struct sockaddr_in client;
+//#pragma comment(lib, "Ws2_32.lib")
 
 ////////// "Real" of the externs in Client.h ///////////////
-SOCKET clientSock;
 char address[100];
-SOCKET sClient, listensock, AcceptSocket;
+SOCKET sendSock;
 struct sockaddr_in server;
-WSAEVENT AcceptEvent;
-LPSOCKET_INFORMATION SI;
-char errmsg[ERRORSIZE];
+char errMsg[ERRORSIZE];
+
+/////////////////// Globals ////////////////////////////////
+HANDLE hSendFile;
 
 int ClientSetup(char* addr) {
 	WSADATA WSAData;
@@ -31,20 +27,21 @@ int ClientSetup(char* addr) {
 
 	wVersionRequested = MAKEWORD(2, 2);
 	if (WSAStartup(wVersionRequested, &WSAData) != 0) {
+        ShowLastErr(true);
         qDebug() << "DLL not found!\n";
-		ShowLastErr(true);
 		return -1;
 	}
 
     // TCP Open Socket
-    if ((sClient = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if ((sendSock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
+        ShowLastErr(true);
         qDebug() << "Cannot create tcp socket\n";
         return -1;
     }
 
     // UDP Open Socket (if needed in future) ////////////////////
-    /*if ((sClient = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    /*if ((sendSock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     {
         qDebug() << "Cannot create udp socket\n";
         return -1;
@@ -56,6 +53,7 @@ int ClientSetup(char* addr) {
 	server.sin_port = htons(SERVER_DEFAULT_PORT);
 	if ((hp = gethostbyname(address)) == NULL)
 	{
+        ShowLastErr(true);
         qDebug() << "Unknown server address\n";
 		return -1;
 	}
@@ -65,10 +63,10 @@ int ClientSetup(char* addr) {
 
 	
     // TCP Connecting to the server
-    if (connect(sClient, (struct sockaddr *)&server, sizeof(server)) == -1)
+    if (connect(sendSock, (struct sockaddr *)&server, sizeof(server)) == -1)
     {
-        qDebug() << "Can't connect to server\n";
         ShowLastErr(true);
+        qDebug() << "Can't connect to server\n";
         return -1;
     }
 
@@ -79,7 +77,7 @@ int ClientSetup(char* addr) {
     client.sin_port = htons(0);  // bind to any available port
     client.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (bind(sClient, (struct sockaddr *)&client, sizeof(client)) == -1)
+    if (bind(sendSock, (struct sockaddr *)&client, sizeof(client)) == -1)
     {
         perror("Can't bind name to socket");
         return -1;
@@ -89,31 +87,37 @@ int ClientSetup(char* addr) {
 	return 0;
 }
 
-DWORD WINAPI ClientSend() {
+int ClientSend(HANDLE hFile) {
+    HANDLE hThread;
+    DWORD ThreadId;
+
+    if ((hThread = CreateThread(NULL, 0, ClientSendThread, (LPVOID)hFile, 0, &ThreadId)) == NULL)
+    {
+        printf("CreateThread failed with error %lu\n", GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
+    hSendFile = (HANDLE) lpParameter;
     char *sendbuff = new char[CLIENT_PACKET_SIZE];
 	DWORD  dwBytesRead;
 	int sentBytes;
     int sentpackets = 0;
 
-    /*hSendFile = CreateFile(clientparam->filename, // file to open
-        GENERIC_READ,          // open for reading
-        FILE_SHARE_READ,       // share for reading
-        NULL,                  // default security
-        OPEN_EXISTING,         // existing file only
-        FILE_ATTRIBUTE_NORMAL, // normal file
-        NULL);                 // no attr. template*/
-
 	while (true) {
         if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE - 1, &dwBytesRead, NULL) == FALSE)
 		{
+            ShowLastErr(false);
             if (dwBytesRead == 0) {
                 qDebug() << "End of file";
-                ClientCleanup(clientSock);
+                ClientCleanup();
 				return TRUE;
 			}
             else {
                 qDebug() << "Couldn't read file\n";
-                ClientCleanup(clientSock);
+                ClientCleanup();
 				return FALSE;
 			}
 		}
@@ -124,9 +128,10 @@ DWORD WINAPI ClientSend() {
 		}
 
         // TCP Send
-        sentBytes = send(clientSock, sendbuff, CLIENT_PACKET_SIZE, 0);
+        sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
         ShowLastErr(true);
         sentpackets++;
+        qDebug() << "Packet" << sentpackets << "sent";
 
         // UDP send (if needed in future) //////////////////////
         //sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
@@ -137,9 +142,13 @@ DWORD WINAPI ClientSend() {
 	return TRUE;
 }
 
-void ClientCleanup(SOCKET s) {
-	closesocket(s);
-	CloseHandle(hSendFile);
+void ClientCleanup() {
+    closesocket(sendSock);
+    if (hSendFile) {
+        qDebug() << "File Handle Closed";
+        CloseHandle(hSendFile);
+    }
+    qDebug() << "WSACleanup called";
     WSACleanup();
 }
 
@@ -163,9 +172,9 @@ void ClientCleanup(SOCKET s) {
 ---------------------------------------------------------------------------------------*/
 void ShowLastErr(bool wsa) {
     DWORD dlasterr;
-    LPCTSTR errmsg = NULL;
+    LPCTSTR errMsg = NULL;
     char errnum[100];
-    if (wsa = true) {
+    if (wsa == true) {
         dlasterr = WSAGetLastError();
     }
     else {
@@ -173,7 +182,7 @@ void ShowLastErr(bool wsa) {
     }
     sprintf_s(errnum, "Error number: %d\n", dlasterr);
     qDebug() << errnum;
-    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ARGUMENT_ARRAY | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL, dlasterr, 0, (LPWSTR)&errmsg, 0, NULL);
-    qDebug() << errmsg;
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, dlasterr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&errMsg, 0, NULL);
+    qDebug() << QString::fromWCharArray(errMsg);
 }

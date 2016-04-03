@@ -32,19 +32,20 @@ typedef struct _SOCKET_INFORMATION {
 
 ///////////////////// Global Variables ////////////////////
 extern char address[100];
-extern SOCKET sClient, listensock, AcceptSocket;
+extern SOCKET sClient, listenSock, acceptSock;
 extern struct sockaddr_in server;
-extern WSAEVENT AcceptEvent;
+extern WSAEVENT acceptEvent;
 extern HANDLE hSendFile, hServ, hLog;
 extern LPSOCKET_INFORMATION SI;
-extern char errmsg[ERRORSIZE];
+extern char errMsg[ERRORSIZE];
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
 int ServerSetup();
-DWORD WINAPI ServerListen(LPVOID lpParameter);
+int ServerListen(HANDLE hFile);
+DWORD WINAPI ServerListenThread(LPVOID lpParameter);
 void ServerCleanup();
-DWORD WINAPI ServerThread(LPVOID lpParameter);
+DWORD WINAPI ServerReceiveThread(LPVOID lpParameter);
 void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
     LPWSAOVERLAPPED Overlapped, DWORD InFlags);
 

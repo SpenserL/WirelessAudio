@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "Client.h"
 #include <QDebug>
+#include <io.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -48,5 +49,26 @@ void MainWindow::on_skipBackwardsButton_released()
 void MainWindow::on_actionConnect_triggered()
 {
     qDebug() << "Clicked";
-    ClientSetup(ui->ipAddr->text().toLatin1().data());
+    if (ClientSetup(ui->ipAddr->text().toLatin1().data()) == 0) {
+        ui->actionConnect->setEnabled(false);
+        ui->actionDisconnect->setEnabled(true);
+        ui->sendBtn->setEnabled(true);
+    }
+}
+
+void MainWindow::on_actionDisconnect_triggered()
+{
+    ClientCleanup();
+    ui->actionConnect->setEnabled(true);
+    ui->actionDisconnect->setEnabled(false);
+    ui->sendBtn->setEnabled(false);
+}
+
+void MainWindow::on_sendBtn_clicked()
+{
+    QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song To Send"), 0, tr("Music (*.wav)")));
+    if (file->exists()) {
+        file->open(QIODevice::ReadOnly);
+        ClientSend((HANDLE) _get_osfhandle(file->handle()));
+    }
 }
