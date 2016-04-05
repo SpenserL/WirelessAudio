@@ -4,6 +4,7 @@
 #endif
 #include <stdio.h>
 #include <QDebug>
+#include <QString>
 #include "Server.h"
 
 ////////// "Real" of the externs in Server.h ///////////////
@@ -82,7 +83,8 @@ int ServerListen(HANDLE hFile) {
 
     if ((hThread = CreateThread(NULL, 0, ServerListenThread, (LPVOID) hFile, 0, &ThreadId)) == NULL)
     {
-        printf("Create ServerListenThread failed with error %lu\n", GetLastError());
+        sprintf_s(errMsg, "Create ServerListenThread failed with error %lu\n", GetLastError());
+        qDebug() << errMsg;
         return -1;
     }
     return 0;
@@ -94,7 +96,8 @@ DWORD WINAPI ServerListenThread(LPVOID lpParameter) {
 
     if ((hThread = CreateThread(NULL, 0, ServerReceiveThread, lpParameter, 0, &ThreadId)) == NULL)
 	{
-        printf("Create ServerReceiveThread failed with error %lu\n", GetLastError());
+        sprintf_s(errMsg, "Create ServerReceiveThread failed with error %lu\n", GetLastError());
+        qDebug() << errMsg;
 		return FALSE;
 	}
 
@@ -113,18 +116,15 @@ DWORD WINAPI ServerListenThread(LPVOID lpParameter) {
 }
 
 DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
-	DWORD Flags;
-    WSAEVENT repeatEvent;
 	WSAEVENT EventArray[1];
-	DWORD Index;
-	DWORD RecvBytes;
+    DWORD Index, RecvBytes, Flags, LastErr;
     LPSOCKET_INFORMATION SocketInfo;
 
     hReceiveFile = (HANDLE) lpParameter;
 
 	// Save the accept event in the event array.
 
-    EventArray[0] = repeatEvent;
+    EventArray[0] = acceptEvent;
 
 	while (TRUE)
 	{
@@ -136,7 +136,8 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 
 			if (Index == WSA_WAIT_FAILED)
 			{
-				printf("WSAWaitForMultipleEvents failed with error %d\n", WSAGetLastError());
+                sprintf_s(errMsg, "WSAWaitForMultipleEvents failed with error %d\n", WSAGetLastError());
+                qDebug() << errMsg;
 				return FALSE;
 			}
 
@@ -177,10 +178,9 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
         if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
         {
-            ShowLastErr(true);
-            if (WSAGetLastError() != WSA_IO_PENDING)
+            if ((LastErr = WSAGetLastError()) != WSA_IO_PENDING)
             {
-                sprintf_s(errMsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+                sprintf_s(errMsg, "WSARecv() failed with error %d\n", LastErr);
                 qDebug() << errMsg;
                 return FALSE;
             }
@@ -206,9 +206,7 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	LPWSAOVERLAPPED Overlapped, DWORD InFlags)
 {
-	DWORD RecvBytes;
-	DWORD Flags;
-	DWORD byteswrittenfile = 0;
+    DWORD RecvBytes, Flags, byteswrittenfile = 0, LastErr;
 	// Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
 	SI = (LPSOCKET_INFORMATION)Overlapped;
 	char *writebuff = SI->Buffer;
@@ -249,9 +247,9 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	if (WSARecv(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
 		&(SI->Overlapped), ServerCallback) == SOCKET_ERROR)
 	{
-		if (WSAGetLastError() != WSA_IO_PENDING)
+        if ((LastErr = WSAGetLastError()) != WSA_IO_PENDING)
 		{
-            sprintf_s(errMsg, "WSARecv() failed with error %d\n", WSAGetLastError());
+            sprintf_s(errMsg, "WSARecv() failed with error %d\n", LastErr);
             qDebug() << errMsg;
 			return;
 		}
@@ -305,5 +303,5 @@ void ShowLastErr(bool wsa) {
     qDebug() << errnum;
     FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ARGUMENT_ARRAY | FORMAT_MESSAGE_ALLOCATE_BUFFER,
         NULL, dlasterr, 0, (LPWSTR)&errMsg, 0, NULL);
-    qDebug() << errMsg;
+    qDebug() << QString::fromWCharArray(errMsg);
 }
