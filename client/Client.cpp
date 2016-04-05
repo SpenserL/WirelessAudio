@@ -93,7 +93,8 @@ int ClientSend(HANDLE hFile) {
 
     if ((hThread = CreateThread(NULL, 0, ClientSendThread, (LPVOID)hFile, 0, &ThreadId)) == NULL)
     {
-        printf("CreateThread failed with error %lu\n", GetLastError());
+        ShowLastErr(false);
+        qDebug() << "Create Send Thread failed";
         return -1;
     }
     return 0;
@@ -103,26 +104,23 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
     hSendFile = (HANDLE) lpParameter;
     char *sendbuff = new char[CLIENT_PACKET_SIZE];
 	DWORD  dwBytesRead;
-	int sentBytes;
-    int sentpackets = 0;
+    int sentBytes = 0, sentpackets = 0;
 
 	while (true) {
         if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE - 1, &dwBytesRead, NULL) == FALSE)
 		{
             ShowLastErr(false);
-            if (dwBytesRead == 0) {
-                qDebug() << "End of file";
-                ClientCleanup();
-				return TRUE;
-			}
-            else {
-                qDebug() << "Couldn't read file\n";
-                ClientCleanup();
-				return FALSE;
-			}
+            qDebug() << "Couldn't read file";
+            ClientCleanup();
+            return FALSE;
 		}
 
-        if (dwBytesRead > 0 && dwBytesRead < (DWORD)CLIENT_PACKET_SIZE - 1)
+        if (dwBytesRead == 0) {
+            qDebug() << "End of file";
+            ClientCleanup();
+            return TRUE;
+        }
+        else if (dwBytesRead > 0 && dwBytesRead < (DWORD)CLIENT_PACKET_SIZE - 1)
 		{
 			sendbuff[dwBytesRead] = '\0';
 		}
