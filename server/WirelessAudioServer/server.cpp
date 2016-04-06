@@ -15,6 +15,7 @@ WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
+int packetNum, totalBytes, totalBytesWritten;
 
 int ServerSetup() {
 
@@ -119,7 +120,7 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 	WSAEVENT EventArray[1];
     DWORD Index, RecvBytes, Flags, LastErr;
     LPSOCKET_INFORMATION SocketInfo;
-
+    packetNum = 0, totalBytes = 0;
     hReceiveFile = (HANDLE) lpParameter;
 
 	// Save the accept event in the event array.
@@ -166,7 +167,7 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 		ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
 		SocketInfo->BytesSEND = 0;
 		SocketInfo->BytesRECV = 0;
-		SocketInfo->DataBuf.len = KBYTES540;
+        SocketInfo->DataBuf.len = CLIENT_PACKET_SIZE;
 		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 
         sprintf_s(errMsg, "Socket %d connected\n", acceptSock);
@@ -185,7 +186,8 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
                 return FALSE;
             }
         }
-
+        packetNum++;
+        totalBytes += RecvBytes;
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -208,8 +210,7 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 {
     DWORD RecvBytes, Flags, byteswrittenfile = 0, LastErr;
 	// Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
-	SI = (LPSOCKET_INFORMATION)Overlapped;
-	char *writebuff = SI->Buffer;
+    SI = (LPSOCKET_INFORMATION)Overlapped;
 
 	if (Error != 0)
 	{
@@ -226,22 +227,31 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	if (Error != 0 || BytesTransferred == 0)
 	{
 		closesocket(SI->Socket);
+        CloseHandle(hReceiveFile);
 		GlobalFree(SI);
 		return;
-	}
+    }
 
-    sprintf_s(errMsg, "Bytes received: %d\n", BytesTransferred);
-    qDebug() << errMsg;
-
-    if (WriteFile(hReceiveFile, writebuff, BytesTransferred, &byteswrittenfile, NULL) == FALSE) {
+    if (WriteFile(hReceiveFile, SI->DataBuf.buf, strlen(SI->DataBuf.buf), &byteswrittenfile, NULL) == FALSE) {
         qDebug() << "Couldn't write to server file\n";
 		ShowLastErr(false);
 	}
+    ShowLastErr(false);
+
+    totalBytesWritten += byteswrittenfile;
+    sprintf_s(errMsg, "Bytes received: %d\n", BytesTransferred);
+    qDebug() << errMsg;
+    qDebug() << "Bytes written:" << byteswrittenfile;
+    qDebug() << "Packet num" << packetNum;
+    qDebug() << "Total bytes" << totalBytes;
+    qDebug() << "Total bytes written" << totalBytesWritten;
+    packetNum++;
+    totalBytes += BytesTransferred;
 
 	Flags = 0;
 	ZeroMemory(&(SI->Overlapped), sizeof(WSAOVERLAPPED));
 
-	SI->DataBuf.len = KBYTES540;
+    SI->DataBuf.len = CLIENT_PACKET_SIZE;
 	SI->DataBuf.buf = SI->Buffer;
 
 	if (WSARecv(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
@@ -260,12 +270,12 @@ void ServerCleanup() {
     qDebug() << "ListenSock closed";
     closesocket(listenSock);
     if (acceptSock) {
-        qDebug() << "AcceptSock closed";
         closesocket(acceptSock);
+        qDebug() << "AcceptSock closed";
     }
     if (hReceiveFile) {
-        qDebug() << "File handle closed";
         CloseHandle(hReceiveFile);
+        qDebug() << "File handle closed";
     }
     qDebug() << "WSACleanup called";
     WSACleanup();

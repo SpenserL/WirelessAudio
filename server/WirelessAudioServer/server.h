@@ -8,7 +8,7 @@
 #define SERVER_DEFAULT_PORT	7000
 #define FILENAMESIZE		100
 #define ERRORSIZE			512
-#define KBYTES540		4423680
+#define CLIENT_PACKET_SIZE  8192
 
 ///////////// Global Structure Definitions ////////////////
 struct ClientParams {
@@ -24,7 +24,7 @@ struct ClientParams {
 typedef struct _SOCKET_INFORMATION {
     OVERLAPPED Overlapped;
     SOCKET Socket;
-    CHAR Buffer[KBYTES540];
+    CHAR Buffer[CLIENT_PACKET_SIZE];
     WSABUF DataBuf;
     DWORD BytesSEND;
     DWORD BytesRECV;
