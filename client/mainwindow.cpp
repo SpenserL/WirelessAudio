@@ -1,10 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
+#include "Client.h"
+#include <QDebug>
+#include <io.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-    audioManager = new AudioManager(this);
+    //audioManager = new AudioManager(this);
+    QRegExp regex;
+    regex.setPattern("^(([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))\\.){3}([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))$");
+    QValidator* val = new QRegExpValidator(regex, this);
+    ui->ipAddr->setValidator(val);
+    //ui->ipAddr->setText("192.168.1.147");
+    ui->ipAddr->setText("127.0.0.1");
 }
 
 MainWindow::~MainWindow() {
@@ -42,5 +50,27 @@ void MainWindow::on_skipBackwardsButton_released()
 
 void MainWindow::on_actionConnect_triggered()
 {
-    //ClientSetup(true);
+    qDebug() << "Clicked";
+    if (ClientSetup(ui->ipAddr->text().toLatin1().data()) == 0) {
+        ui->actionConnect->setEnabled(false);
+        ui->actionDisconnect->setEnabled(true);
+        ui->sendBtn->setEnabled(true);
+    }
+}
+
+void MainWindow::on_actionDisconnect_triggered()
+{
+    ClientCleanup();
+    ui->actionConnect->setEnabled(true);
+    ui->actionDisconnect->setEnabled(false);
+    ui->sendBtn->setEnabled(false);
+}
+
+void MainWindow::on_sendBtn_clicked()
+{
+    QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song To Send"), 0, tr("Music (*.wav)")));
+    if (file->exists()) {
+        file->open(QIODevice::ReadOnly);
+        ClientSend((HANDLE) _get_osfhandle(file->handle()));
+    }
 }

@@ -31,6 +31,10 @@ private slots:
 
     void on_actionConnect_triggered();
 
+    void on_actionDisconnect_triggered();
+
+    void on_sendBtn_clicked();
+
 private:
     Ui::MainWindow *ui;
     AudioManager *audioManager;

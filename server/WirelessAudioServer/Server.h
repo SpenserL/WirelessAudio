@@ -1,13 +1,14 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <winsock2.h>
 #include <Windows.h>
 
 ///////////////////// Macros //////////////////////////////
 #define SERVER_DEFAULT_PORT	7000
 #define FILENAMESIZE		100
 #define ERRORSIZE			512
-#define KBYTES540		4423680
+#define CLIENT_PACKET_SIZE  8192
 
 ///////////// Global Structure Definitions ////////////////
 struct ClientParams {
@@ -23,28 +24,28 @@ struct ClientParams {
 typedef struct _SOCKET_INFORMATION {
     OVERLAPPED Overlapped;
     SOCKET Socket;
-    CHAR Buffer[KBYTES540];
+    CHAR Buffer[CLIENT_PACKET_SIZE];
     WSABUF DataBuf;
     DWORD BytesSEND;
     DWORD BytesRECV;
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 ///////////////////// Global Variables ////////////////////
-char address[100];
-SOCKET sClient, listensock, AcceptSocket;
-struct sockaddr_in server;
-WSAEVENT AcceptEvent;
-HANDLE hSendFile, hServ, hLog;
-LPSOCKET_INFORMATION SI;
-bool tcp;
-char errmsg[ERRORSIZE];
+extern char address[100];
+extern SOCKET sClient, listenSock, acceptSock;
+extern struct sockaddr_in server;
+extern WSAEVENT acceptEvent;
+extern HANDLE hSendFile, hServ, hLog;
+extern LPSOCKET_INFORMATION SI;
+extern char errMsg[ERRORSIZE];
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
-int ServerSetup(bool tcp);
-DWORD WINAPI ServerListen(LPVOID lpParameter);
+int ServerSetup();
+int ServerListen(HANDLE hFile);
+DWORD WINAPI ServerListenThread(LPVOID lpParameter);
 void ServerCleanup();
-DWORD WINAPI ServerThread(LPVOID lpParameter);
+DWORD WINAPI ServerReceiveThread(LPVOID lpParameter);
 void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
     LPWSAOVERLAPPED Overlapped, DWORD InFlags);
 
