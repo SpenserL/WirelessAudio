@@ -12,7 +12,7 @@ void PopulateBufferWorker::doWork() {
         //while (buffer->size() - buffer->pos() < BUFFERSIZE * 10) {
             circularBuffer->pop(buffer);
         //}
-        qDebug() << buffer->pos();
+        //qDebug() << buffer->pos();
     }
     qDebug() << "PopulateBufferWorker doWork Exit";
     buffer->close();
