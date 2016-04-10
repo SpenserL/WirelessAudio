@@ -16,12 +16,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pushButton_clicked();
-
-    void on_pushButton_2_clicked();
-
-    void on_actionSend_triggered();
-
     void on_openIncoming_clicked();
 
     void on_disconnectIncoming_clicked();

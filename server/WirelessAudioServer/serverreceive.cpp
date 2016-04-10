@@ -292,7 +292,6 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
             {
                 lastPacket = true;
                 packetSize = ptrEnd - ptrBegin;
-                qDebug() << "End of writing";
             }
             if (WriteFile(hReceiveFile, writeBuf, packetSize, &byteswrittenfile, NULL) == FALSE)
             {
