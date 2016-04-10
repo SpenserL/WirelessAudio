@@ -2,17 +2,20 @@
 
 //Carson
 AudioManager::AudioManager(QObject * par) {
-  parent = par;
-  songState = Stopped;
-  circularBuffer = new CircularBuffer(CIRCULARBUFFERSIZE, BUFFERSIZE, par);
-  buffer = new QBuffer(parent);
-  qRegisterMetaType<wav_hdr>("wav_hdr");
+    parent = par;
+}
 
-  populateBufferWorker = new PopulateBufferWorker(circularBuffer, buffer);
-  populateBufferWorker->moveToThread(&populateBufferThread);
-  connect(&populateBufferThread, SIGNAL(started()), populateBufferWorker, SLOT(doWork()));
-  connect(&populateBufferThread, &QThread::finished, populateBufferWorker, &QObject::deleteLater);
-  populateBufferThread.start();
+void AudioManager::Init(QBuffer * buf) {
+    songState = Stopped;
+    circularBuffer = new CircularBuffer(CIRCULARBUFFERSIZE, BUFFERSIZE, parent);
+    buffer = buf;
+    qRegisterMetaType<wav_hdr>("wav_hdr");
+
+    populateBufferWorker = new PopulateBufferWorker(circularBuffer, buffer);
+    populateBufferWorker->moveToThread(&populateBufferThread);
+    connect(&populateBufferThread, SIGNAL(started()), populateBufferWorker, SLOT(doWork()));
+    connect(&populateBufferThread, &QThread::finished, populateBufferWorker, &QObject::deleteLater);
+    populateBufferThread.start();
 }
 
 AudioManager::~AudioManager() {
@@ -24,9 +27,6 @@ AudioManager::~AudioManager() {
 }
 
 void AudioManager::loadSong(QFile * f) {
-    if (songState != Stopped) {
-        stop();
-    }
     readFileWorker = new ReadFileWorker(f, circularBuffer);
     readFileWorker->moveToThread(&readWorkerThread);
     connect(&readWorkerThread, &QThread::finished, readFileWorker, &QObject::deleteLater);
@@ -39,7 +39,6 @@ void AudioManager::loadSong(QFile * f) {
 
 void AudioManager::receivedWavHeader(wav_hdr wavHeader) {
     qDebug() << "Received Header";
-    bytesPerSecond = wavHeader.bytesPerSec;
     format.setSampleRate(wavHeader.SamplesPerSec);
     format.setChannelCount(wavHeader.NumOfChan);
     format.setSampleSize(wavHeader.bitsPerSample);
@@ -50,6 +49,27 @@ void AudioManager::receivedWavHeader(wav_hdr wavHeader) {
     audio = new QAudioOutput(format, parent);
     audio->setVolume(volume);
     songState = Playing;
+    play();
+}
+
+void AudioManager::playRecord() {
+    qDebug() << "Received Header";
+
+    QAudioFormat formatRecord;
+    // Set up the desired format, for example:
+
+    formatRecord.setSampleRate(16000);
+    formatRecord.setChannelCount(1);
+    formatRecord.setSampleSize(16);
+
+    formatRecord.setCodec("audio/pcm");
+    formatRecord.setByteOrder(QAudioFormat::LittleEndian);
+    formatRecord.setSampleType(QAudioFormat::UnSignedInt);
+
+    audio = new QAudioOutput(formatRecord, parent);
+    audio->setVolume(volume);
+    songState = Playing;
+    buffer->seek(0);
     play();
 }
 
@@ -85,6 +105,7 @@ void AudioManager::skip(float seconds) {
 }
 
 QIODevice * AudioManager::play() {
+    qDebug() << "Play entered";
     device = buffer;
     audio->start(device);
     qDebug() << "Playing device, current buffered amount: " << buffer->size();

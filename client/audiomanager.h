@@ -26,6 +26,8 @@ public:
     void setVolume(float volume);
     void loadSong(QFile * file);
     void stop();
+    void playRecord();
+    void Init(QBuffer * buf);
 
 public slots:
     void receivedWavHeader(wav_hdr wavHeader);

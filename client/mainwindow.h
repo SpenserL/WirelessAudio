@@ -22,7 +22,7 @@ private slots:
     void on_playButton_released();
 
     void on_pauseButton_released();
-
+    void handleStateChanged(QAudio::State);
     void on_resumeButton_released();
 
     void on_skipForwardButton_released();
@@ -34,6 +34,10 @@ private slots:
     void on_actionDisconnect_triggered();
 
     void on_sendBtn_clicked();
+
+    void on_pushButton_clicked();
+
+    void on_pushButton_2_clicked();
 
 private:
     Ui::MainWindow *ui;
