@@ -13,10 +13,12 @@ SOCKET listenSock, acceptSock;
 bool listenSockOpen, acceptSockOpen;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
+bool hReceiveOpen;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
 
-int ServerSetup()
+
+int ServerReceiveSetup()
 {
 
     int ret;
@@ -85,6 +87,7 @@ int ServerListen(HANDLE hFile)
 {
     HANDLE hThread;
     DWORD ThreadId;
+    hReceiveOpen = true;
 
     if ((hThread = CreateThread(NULL, 0, ServerListenThread, (LPVOID) hFile, 0, &ThreadId)) == NULL)
     {
@@ -304,20 +307,31 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 
 void ServerCleanup()
 {
+    if (sendSockOpen)
+    {
+        closesocket(sendSock);
+        sendSockOpen = false;
+    }
     if (acceptSockOpen)
     {
         closesocket(acceptSock);
         acceptSockOpen = false;
-        qDebug() << "AcceptSock closed";
     }
-    closesocket(listenSock);
-    qDebug() << "ListenSock closed";
-    if (hReceiveFile)
+    if (listenSockOpen)
+    {
+        closesocket(listenSock);
+        listenSockOpen = false;
+    }
+    if (hReceiveOpen)
     {
         CloseHandle(hReceiveFile);
-        qDebug() << "File handle closed";
+        hReceiveOpen = false;
     }
-    qDebug() << "WSACleanup called";
+    if (hSendOpen)
+    {
+        CloseHandle(hSendFile);
+        hSendOpen = false;
+    }
     WSACleanup();
 }
 
