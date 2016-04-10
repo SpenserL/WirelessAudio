@@ -108,8 +108,47 @@ int ClientSend(HANDLE hFile)
     return 0;
 }
 
-DWORD WINAPI ClientSendThread(LPVOID lpParameter)
-{
+//Written by Carson, designed by Micah since it follows her other thread design
+DWORD WINAPI ClientSendMicrophoneThread(LPVOID lpParameter) {
+    hSendFile = (HANDLE) lpParameter;
+    char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE + 1, sizeof(char));
+    DWORD  dwBytesRead;
+    int sentBytes = 0;
+
+    while (isRecording) {
+        microphoneBuffer->seek(0);
+        dwBytesRead = microphoneBuffer->read(sendbuff, CLIENT_PACKET_SIZE);
+
+        if (dwBytesRead > 0) {
+            // TCP Send
+            sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
+            ShowLastErr(true);
+        }
+
+        microphoneBuffer->seek(microphoneBuffer->size()-1);
+    }
+
+    sprintf(sendbuff, "%c%c%c", (char)4, (char)4, (char)4);
+    sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
+
+    return TRUE;
+}
+
+//Written by Carson, Designed by Micah since it follows her other functions design
+int ClientSendMicrophoneData(HANDLE hFile) {
+    HANDLE hThread;
+    DWORD ThreadId;
+
+    if ((hThread = CreateThread(NULL, 0, ClientSendMicrophoneThread, (LPVOID)hFile, 0, &ThreadId)) == NULL) {
+        ShowLastErr(false);
+        qDebug() << "Create ClientSendMicrophoneThread failed";
+        return -1;
+    }
+
+    return 0;
+}
+
+DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
     hSendFile = (HANDLE) lpParameter;
     char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE + 1, sizeof(char));
 	DWORD  dwBytesRead;
@@ -164,7 +203,7 @@ void ClientCleanup()
     }
     if (hSendOpen)
     {
-        CloseHandle(hSendFile);
+        closesocket(sendSock);
         hSendOpen = false;
     }
     if (hReceiveOpen)

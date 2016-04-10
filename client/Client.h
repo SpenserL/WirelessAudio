@@ -4,6 +4,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include "circularbuffer.h"
+#include <QBuffer>
 
 ///////////////////// Global Prototypes ///////////////////
 // Sending Prototypes
@@ -11,6 +12,8 @@ void ShowLastErr(bool wsa);
 int ClientSendSetup(char* addr);
 void ClientCleanup();
 int ClientSend(HANDLE hFile);
+int ClientSendMicrophoneData(HANDLE hFile);
+DWORD WINAPI ClientSendMicrophoneThread(LPVOID lpParameter);
 DWORD WINAPI ClientSendThread(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);
 // Receiving Prototypes
@@ -45,6 +48,8 @@ extern char addressSend[100];
 extern SOCKET sendSock;
 extern struct sockaddr_in server;
 extern char errMsg[ERRORSIZE];
+extern bool isRecording;
+extern QBuffer *microphoneBuffer;
 // Receiving
 extern SOCKET listenSock, acceptSock;
 extern bool listenSockOpen, acceptSockOpen;
