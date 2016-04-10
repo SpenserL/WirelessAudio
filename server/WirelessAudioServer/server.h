@@ -6,7 +6,7 @@
 #include "../../client/circularbuffer.h"
 
 ///////////////////// Macros //////////////////////////////
-#define SERVER_DEFAULT_PORT	7000
+#define SERVER_DEFAULT_PORT	7001
 #define FILENAMESIZE		100
 #define ERRORSIZE			512
 #define CLIENT_PACKET_SIZE  8192
