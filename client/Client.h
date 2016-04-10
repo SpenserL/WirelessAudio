@@ -3,6 +3,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include "circularbuffer.h"
 
 ///////////////////// Global Prototypes ///////////////////
 // Sending Prototypes
@@ -13,7 +14,7 @@ int ClientSend(HANDLE hFile);
 DWORD WINAPI ClientSendThread(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);
 // Receiving Prototypes
-int ClientReceiveSetup(char* addr);
+int ClientReceiveSetup();
 int ClientListen(HANDLE hFile);
 DWORD WINAPI ClientListenThread(LPVOID lpParameter);
 DWORD WINAPI ClientReceiveThread(LPVOID lpParameter);
@@ -39,9 +40,18 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 ///////////////////// Global Variables ////////////////////
+// Sending
 extern char addressSend[100];
 extern SOCKET sendSock;
 extern struct sockaddr_in server;
 extern char errMsg[ERRORSIZE];
+// Receiving
+extern SOCKET listenSock, acceptSock;
+extern bool listenSockOpen, acceptSockOpen;
+extern WSAEVENT acceptEvent;
+extern HANDLE hReceiveFile;
+extern bool hReceiveOpen;
+extern LPSOCKET_INFORMATION SI;
+extern CircularBuffer* circularBufferRecv;
 
 #endif

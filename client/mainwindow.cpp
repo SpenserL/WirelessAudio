@@ -9,24 +9,27 @@
 
 QFile dFile;
 QAudioInput * audio;
-CircularBuffer * cb;
+CircularBuffer * cb, *circularBufferRecv;
 QBuffer *buffer;
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
-    ui->setupUi(this);
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
+{
     audioManager = new AudioManager(this);
     buffer = new QBuffer(parent);
     audioManager->Init(buffer);
 
+    circularBufferRecv = new CircularBuffer(CIRCULARBUFFERSIZE, SERVER_PACKET_SIZE, this);
     QRegExp regex;
     regex.setPattern("^(([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))\\.){3}([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))$");
     QValidator* val = new QRegExpValidator(regex, this);
+    ui->setupUi(this);
     ui->ipAddr->setValidator(val);
     ui->ipAddr->setText("192.168.0.6");
     //ui->ipAddr->setText("127.0.0.1");
 }
 
-MainWindow::~MainWindow() {
+MainWindow::~MainWindow()
+{
     delete ui;
     delete audioManager;
 
@@ -65,33 +68,6 @@ void MainWindow::on_skipBackwardsButton_released()
     audioManager->skip(-10);
 }
 
-void MainWindow::on_actionConnect_triggered()
-{
-    qDebug() << "Clicked";
-    if (ClientSetup(ui->ipAddr->text().toLatin1().data()) == 0) {
-        ui->actionConnect->setEnabled(false);
-        ui->actionDisconnect->setEnabled(true);
-        ui->sendBtn->setEnabled(true);
-    }
-}
-
-void MainWindow::on_actionDisconnect_triggered()
-{
-    ClientCleanup();
-    ui->actionConnect->setEnabled(true);
-    ui->actionDisconnect->setEnabled(false);
-    ui->sendBtn->setEnabled(false);
-}
-
-void MainWindow::on_sendBtn_clicked()
-{
-    QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song To Send"), 0, tr("Music (*.wav)")));
-    if (file->exists()) {
-        file->open(QIODevice::ReadOnly);
-        ClientSend((HANDLE) _get_osfhandle(file->handle()));
-    }
-}
-
 void MainWindow::on_pushButton_clicked()
 {
       QIODevice *QID;
@@ -112,7 +88,8 @@ void MainWindow::on_pushButton_clicked()
      format.setSampleType(QAudioFormat::UnSignedInt);
 
      QAudioDeviceInfo info = QAudioDeviceInfo::defaultInputDevice();
-     if (!info.isFormatSupported(format)) {
+     if (!info.isFormatSupported(format))
+     {
          qWarning() << "Default format not supported, trying to use the nearest.";
          format = info.nearestFormat(format);
      }
@@ -131,4 +108,59 @@ void MainWindow::on_pushButton_2_clicked()
     audioManager->playRecord();
     //dFile.close();
     //delete audio;
+}
+
+void MainWindow::on_connectOutgoing_clicked()
+{
+    if (ClientSendSetup(ui->ipAddr->text().toLatin1().data()) == 0)
+    {
+        ui->connectOutgoing->setEnabled(false);
+        ui->ipAddr->setEnabled(false);
+        ui->disconnectOutgoing->setEnabled(true);
+        ui->sendBtn->setEnabled(true);
+    }
+}
+
+void MainWindow::on_sendBtn_clicked()
+{
+    QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song To Send"), 0, tr("Music (*.wav)")));
+    if (file->exists())
+    {
+        file->open(QIODevice::ReadOnly);
+        ClientSend((HANDLE) _get_osfhandle(file->handle()));
+    }
+}
+
+void MainWindow::on_disconnectOutgoing_clicked()
+{
+    ClientCleanup();
+    ui->connectOutgoing->setEnabled(true);
+    ui->ipAddr->setEnabled(true);
+    ui->disconnectOutgoing->setEnabled(false);
+    ui->sendBtn->setEnabled(false);
+}
+
+void MainWindow::on_openIncoming_clicked()
+{
+    if (ClientReceiveSetup() == 0)
+    {
+        QFile *file = new QFile(QFileDialog::getSaveFileName(this, tr("Save song as"), 0, tr("Music (*.wav)")));
+        if (file->fileName() != NULL)
+        {
+            ui->openIncoming->setEnabled(false);
+            ui->disconnectIncoming->setEnabled(true);
+            file->open(QIODevice::WriteOnly);
+            ClientListen((HANDLE) _get_osfhandle(file->handle()));
+        } else
+        {
+            ClientCleanup();
+        }
+    }
+}
+
+void MainWindow::on_disconnectIncoming_clicked()
+{
+    ui->openIncoming->setEnabled(true);
+    ui->disconnectIncoming->setEnabled(false);
+    ClientCleanup();
 }

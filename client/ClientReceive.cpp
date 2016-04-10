@@ -2,21 +2,20 @@
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
+
 #include <stdio.h>
 #include <QDebug>
 #include <QString>
 #include <QBuffer>
 #include "Client.h"
 
-////////// "Real" of the externs in Server.h ///////////////
-char address[100], packet[CLIENT_PACKET_SIZE];
+////////// "Real" of the externs in Server.h //////////////
 SOCKET listenSock, acceptSock;
 bool listenSockOpen, acceptSockOpen;
-struct sockaddr_in server;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
+bool hReceiveOpen;
 LPSOCKET_INFORMATION SI;
-char errMsg[ERRORSIZE];
 
 int ClientReceiveSetup()
 {
@@ -53,7 +52,7 @@ int ClientReceiveSetup()
 
     InternetAddr.sin_family = AF_INET;
     InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    InternetAddr.sin_port = htons(SERVER_DEFAULT_PORT);
+    InternetAddr.sin_port = htons(CLIENT_DEFAULT_PORT);
 
     if (bind(listenSock, (PSOCKADDR)&InternetAddr,
         sizeof(InternetAddr)) == SOCKET_ERROR)
@@ -86,8 +85,9 @@ int ClientListen(HANDLE hFile)
 {
     HANDLE hThread;
     DWORD ThreadId;
+    hReceiveOpen = true;
 
-    if ((hThread = CreateThread(NULL, 0, ServerListenThread, (LPVOID) hFile, 0, &ThreadId)) == NULL)
+    if ((hThread = CreateThread(NULL, 0, ClientListenThread, (LPVOID) hFile, 0, &ThreadId)) == NULL)
     {
         sprintf_s(errMsg, "Create ServerListenThread failed with error %lu\n", GetLastError());
         qDebug() << errMsg;
@@ -101,7 +101,7 @@ DWORD WINAPI ClientListenThread(LPVOID lpParameter)
     HANDLE hThread;
     DWORD ThreadId;
 
-    if ((hThread = CreateThread(NULL, 0, ServerReceiveThread, lpParameter, 0, &ThreadId)) == NULL)
+    if ((hThread = CreateThread(NULL, 0, ClientReceiveThread, lpParameter, 0, &ThreadId)) == NULL)
     {
         sprintf_s(errMsg, "Create ServerReceiveThread failed with error %lu\n", GetLastError());
         qDebug() << errMsg;
@@ -173,7 +173,7 @@ DWORD WINAPI ClientReceiveThread(LPVOID lpParameter)
         ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
         SocketInfo->BytesSEND = 0;
         SocketInfo->BytesRECV = 0;
-        SocketInfo->DataBuf.len = CLIENT_PACKET_SIZE;
+        SocketInfo->DataBuf.len = SERVER_PACKET_SIZE;
         SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 
         sprintf_s(errMsg, "Socket %d connected\n", acceptSock);
@@ -184,7 +184,7 @@ DWORD WINAPI ClientReceiveThread(LPVOID lpParameter)
         Flags = 0;
         // TCP WSA receive
         if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
-            &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
+            &(SocketInfo->Overlapped), ClientCallback) == SOCKET_ERROR)
         {
             if ((LastErr = WSAGetLastError()) != WSA_IO_PENDING)
             {
@@ -194,7 +194,7 @@ DWORD WINAPI ClientReceiveThread(LPVOID lpParameter)
             }
         }
 
-        if ((hThread = CreateThread(NULL, 0, ServerWriteToFileThread, lpParameter, 0, &ThreadId)) == NULL)
+        if ((hThread = CreateThread(NULL, 0, ClientWriteToFileThread, lpParameter, 0, &ThreadId)) == NULL)
         {
             sprintf_s(errMsg, "Create ServerWriteToFileThread failed with error %lu\n", GetLastError());
             qDebug() << errMsg;
@@ -203,7 +203,7 @@ DWORD WINAPI ClientReceiveThread(LPVOID lpParameter)
 
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
-            (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
+            (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ClientCallback) == SOCKET_ERROR)
         {
             ShowLastErr(true);
             if (WSAGetLastError() != WSA_IO_PENDING)
@@ -245,7 +245,7 @@ void CALLBACK ClientCallback(DWORD Error, DWORD BytesTransferred,
         return;
     }
 
-    char slotsize[CLIENT_PACKET_SIZE];
+    char slotsize[SERVER_PACKET_SIZE];
     sprintf(slotsize, "%04lu", BytesTransferred);
     if ((circularBufferRecv->pushBack(slotsize)) == false || (circularBufferRecv->pushBack(SI->DataBuf.buf)) == false)
     {
@@ -255,11 +255,11 @@ void CALLBACK ClientCallback(DWORD Error, DWORD BytesTransferred,
     Flags = 0;
     ZeroMemory(&(SI->Overlapped), sizeof(WSAOVERLAPPED));
 
-    SI->DataBuf.len = CLIENT_PACKET_SIZE;
+    SI->DataBuf.len = SERVER_PACKET_SIZE;
     SI->DataBuf.buf = SI->Buffer;
 
     if (WSARecv(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
-        &(SI->Overlapped), ServerCallback) == SOCKET_ERROR)
+        &(SI->Overlapped), ClientCallback) == SOCKET_ERROR)
     {
         if ((LastErr = WSAGetLastError()) != WSA_IO_PENDING)
         {

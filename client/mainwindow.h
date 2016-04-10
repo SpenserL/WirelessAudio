@@ -39,6 +39,14 @@ private slots:
 
     void on_pushButton_2_clicked();
 
+    void on_connectOutgoing_clicked();
+
+    void on_disconnectOutgoing_clicked();
+
+    void on_openIncoming_clicked();
+
+    void on_disconnectIncoming_clicked();
+
 private:
     Ui::MainWindow *ui;
     AudioManager *audioManager;
