@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     QValidator* val = new QRegExpValidator(regex, this);
     ui->ipAddr->setValidator(val);
     ui->ipAddr->setText("192.168.1.147");
-    ui->ipAddr->setText("127.0.0.1");
+    //ui->ipAddr->setText("127.0.0.1");
 }
 
 MainWindow::~MainWindow() {
