@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     circularbuffer.cpp \
     readfileworker.cpp \
     populatebufferworker.cpp \
-    Client.cpp
+    ClientReceive.cpp \
+    ClientSend.cpp
 
 HEADERS  += mainwindow.h \
     audiomanager.h \
