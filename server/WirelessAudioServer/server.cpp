@@ -5,17 +5,19 @@
 #include <stdio.h>
 #include <QDebug>
 #include <QString>
+#include <QBuffer>
 #include "Server.h"
 
 ////////// "Real" of the externs in Server.h ///////////////
-char address[100];
+char address[100], packet[CLIENT_PACKET_SIZE];
 SOCKET listenSock, acceptSock;
+bool listenSockOpen, acceptSockOpen;
 struct sockaddr_in server;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
-int packetNum, totalBytes, totalBytesWritten;
+int packetNum, totalBytes, totalBytesWritten, thisPacketSize;
 
 int ServerSetup()
 {
@@ -69,6 +71,7 @@ int ServerSetup()
         qDebug() << errMsg;
         return -1;
     }
+    listenSockOpen = true;
 
     if ((acceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
 	{
@@ -129,13 +132,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
     LPSOCKET_INFORMATION SocketInfo;
     packetNum = 0, totalBytes = 0;
 
-    if ((hThread = CreateThread(NULL, 0, ServerWriteToFileThread, lpParameter, 0, &ThreadId)) == NULL)
-    {
-        sprintf_s(errMsg, "Create ServerWriteToFileThread failed with error %lu\n", GetLastError());
-        qDebug() << errMsg;
-        return FALSE;
-    }
-
 	// Save the accept event in the event array.
 
     EventArray[0] = acceptEvent;
@@ -184,6 +180,7 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
 		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 
         sprintf_s(errMsg, "Socket %d connected\n", acceptSock);
+        acceptSockOpen = true;
         qDebug() << errMsg;
 
 		
@@ -201,6 +198,14 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
         }
         packetNum++;
         totalBytes += RecvBytes;
+
+        if ((hThread = CreateThread(NULL, 0, ServerWriteToFileThread, lpParameter, 0, &ThreadId)) == NULL)
+        {
+            sprintf_s(errMsg, "Create ServerWriteToFileThread failed with error %lu\n", GetLastError());
+            qDebug() << errMsg;
+            return FALSE;
+        }
+
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -240,11 +245,13 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	if (Error != 0 || BytesTransferred == 0)
 	{
         closesocket(SI->Socket);
+        acceptSockOpen = false;
 		GlobalFree(SI);
 		return;
     }
-
-    if ((circularBufferRecv->pushBack(SI->DataBuf.buf)) == false)
+    char slotsize[5];
+    sprintf(slotsize, "%04lu", BytesTransferred);
+    if ((circularBufferRecv->pushBack(slotsize)) == false || (circularBufferRecv->pushBack(SI->DataBuf.buf)) == false)
     {
         qDebug() << "Writing received packet to circular buffer failed";
     }
@@ -278,15 +285,17 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 {
     DWORD byteswrittenfile = 0;
+    char buf[circularBufferRecv->elementLength];
     hReceiveFile = (HANDLE) lpParameter;
 
     while(true)
     {
         // When the socket closes, no more data is going to arrive,
         // but make sure to empty the circular buffer before stopping
-        if (!acceptSock)
+        if (!acceptSockOpen)
         {
-            if (WriteFile(hReceiveFile, SI->DataBuf.buf, strlen(SI->DataBuf.buf), &byteswrittenfile, NULL) == FALSE)
+            circularBufferRecv->pop(buf);
+            if (WriteFile(hReceiveFile, buf, circularBufferRecv->elementLength, &byteswrittenfile, NULL) == FALSE)
             {
                 qDebug() << "Couldn't write to server file\n";
                 ShowLastErr(false);
@@ -305,7 +314,8 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
         // Normal execution while socket open and buffer has contents to pop
         } else if (circularBufferRecv->length > 0)
         {
-            if (WriteFile(hReceiveFile, SI->DataBuf.buf, strlen(SI->DataBuf.buf), &byteswrittenfile, NULL) == FALSE)
+            circularBufferRecv->pop(buf);
+            if (WriteFile(hReceiveFile, buf, circularBufferRecv->elementLength, &byteswrittenfile, NULL) == FALSE)
             {
                 qDebug() << "Couldn't write to server file\n";
                 ShowLastErr(false);
@@ -315,9 +325,6 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
             totalBytesWritten += byteswrittenfile;
             qDebug() << "Bytes written:" << byteswrittenfile;
             qDebug() << "Total bytes written" << totalBytesWritten;
-        } else {
-            qDebug() << "Nothing written";
-            qDebug() << "Total bytes written" << totalBytesWritten;
         }
     }
     return FALSE;
@@ -325,13 +332,14 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 
 void ServerCleanup()
 {
-    qDebug() << "ListenSock closed";
-    closesocket(listenSock);
-    if (acceptSock)
+    if (acceptSockOpen)
     {
         closesocket(acceptSock);
+        acceptSockOpen = false;
         qDebug() << "AcceptSock closed";
     }
+    closesocket(listenSock);
+    qDebug() << "ListenSock closed";
     if (hReceiveFile)
     {
         CloseHandle(hReceiveFile);

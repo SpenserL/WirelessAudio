@@ -50,6 +50,22 @@ bool CircularBuffer::pop(QBuffer* buf) {
     return true;
 }
 
+bool CircularBuffer::pop(char dest[]) {
+    if (length == 0) {
+        return false;
+    }
+
+    memcpy(dest, back, elementLength);
+
+    back = (char*)back + elementLength;
+    if (back == bufferEnd) {
+        back = buffer;
+    }
+    --(length);
+
+    return true;
+}
+
 void CircularBuffer::resetBuffer() {
     free(buffer);
     buffer = malloc(maxLength* elementLength);

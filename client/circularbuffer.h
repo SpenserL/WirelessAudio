@@ -14,7 +14,8 @@ public:
     CircularBuffer(int maxLength, int elementLength, QObject* parent);
     ~CircularBuffer();
     bool pushBack(void* item);
-    bool pop(QBuffer* buffer);
+    bool pop(QBuffer* buf);
+    bool pop(char* dest);
     void resetBuffer();
 
     int	maxLength;
