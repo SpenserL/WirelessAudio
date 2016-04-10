@@ -14,7 +14,6 @@ LIBS = -lws2_32
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    Server.cpp \
     ../../client/circularbuffer.cpp \
     serverreceive.cpp \
     serversend.cpp

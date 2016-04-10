@@ -9,10 +9,8 @@
 #include "Server.h"
 
 ////////// "Real" of the externs in Server.h ///////////////
-char address[100], packet[CLIENT_PACKET_SIZE];
 SOCKET listenSock, acceptSock;
 bool listenSockOpen, acceptSockOpen;
-struct sockaddr_in server;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
@@ -181,7 +179,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
         acceptSockOpen = true;
         qDebug() << errMsg;
 
-
         Flags = 0;
         // TCP WSA receive
         if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
@@ -201,7 +198,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
             qDebug() << errMsg;
             return FALSE;
         }
-
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -283,7 +279,7 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 
     while(!lastPacket)
     {
-        if (circularBufferRecv->length > 0)
+        if (circularBufferRecv->length > 0 && (circularBufferRecv->length % 2) == 0)
         {
             circularBufferRecv->pop(sizeBuf);
             sizeBuf[5] = '\0';
@@ -293,6 +289,7 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
             {
                 lastPacket = true;
                 packetSize = ptrEnd - ptrBegin;
+                qDebug() << "End of writing";
             }
             if (WriteFile(hReceiveFile, writeBuf, packetSize, &byteswrittenfile, NULL) == FALSE)
             {
