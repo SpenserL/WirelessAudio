@@ -9,6 +9,8 @@ void ShowLastErr(bool wsa);
 int ClientSetup(char* addr);
 void ClientCleanup();
 int ClientSend(HANDLE hFile);
+int ClientSendMicrophoneData(HANDLE hFile);
+DWORD WINAPI ClientSendMicrophoneThread(LPVOID lpParameter);
 DWORD WINAPI ClientSendThread(LPVOID lpParameter);
 void ClientCleanup(SOCKET s);
 
