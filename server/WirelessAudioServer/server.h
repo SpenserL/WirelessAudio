@@ -7,9 +7,11 @@
 
 ///////////////////// Macros //////////////////////////////
 #define SERVER_DEFAULT_PORT	7001
+#define CLIENT_DEFAULT_PORT	7002
 #define FILENAMESIZE		100
 #define ERRORSIZE			512
 #define CLIENT_PACKET_SIZE  8192
+#define SERVER_PACKET_SIZE  8192
 
 ///////////// Global Structure Definitions ////////////////
 struct ClientParams {

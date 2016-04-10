@@ -9,15 +9,12 @@
 #include "Server.h"
 
 ////////// "Real" of the externs in Server.h ///////////////
-char address[100], packet[CLIENT_PACKET_SIZE];
 SOCKET listenSock, acceptSock;
 bool listenSockOpen, acceptSockOpen;
-struct sockaddr_in server;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
-int receivedbytes, totalreceivedbytes, receivedpacket;
 
 int ServerSetup()
 {
@@ -182,7 +179,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
         acceptSockOpen = true;
         qDebug() << errMsg;
 
-
         Flags = 0;
         // TCP WSA receive
         if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
@@ -202,9 +198,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
             qDebug() << errMsg;
             return FALSE;
         }
-
-        totalreceivedbytes += RecvBytes;
-        receivedpacket++;
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -249,11 +242,6 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
         return;
     }
 
-    totalreceivedbytes += BytesTransferred;
-    qDebug() << "\nTotal packets received:" << receivedpacket++;
-    qDebug() << "Total bytes received:" << totalreceivedbytes;
-    qDebug() << "bytes received:" << BytesTransferred;
-
     char slotsize[CLIENT_PACKET_SIZE];
     sprintf(slotsize, "%04lu", BytesTransferred);
     if ((circularBufferRecv->pushBack(slotsize)) == false || (circularBufferRecv->pushBack(SI->DataBuf.buf)) == false)
@@ -285,7 +273,7 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
     char sizeBuf[circularBufferRecv->elementLength];
     char writeBuf[circularBufferRecv->elementLength];
     char delim[4] = {4, 4, 4, '\0'}, *ptrEnd, *ptrBegin = writeBuf;
-    int packetSize, totalbyteswritten = 0, writingpacket = 0;
+    int packetSize;
     bool lastPacket = false;
     hReceiveFile = (HANDLE) lpParameter;
 
@@ -309,10 +297,6 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
                 ShowLastErr(false);
                 return FALSE;
             }
-            qDebug() << "\nwriting packet:" << ++writingpacket;
-            qDebug() << "bytes written:" << byteswrittenfile;
-            totalbyteswritten += byteswrittenfile;
-            qDebug() << "total bytes written:" << totalbyteswritten;
         }
     }
     return TRUE;
