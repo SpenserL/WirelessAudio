@@ -5,6 +5,8 @@
 #include <QFileDialog>
 #include <io.h>
 
+CircularBuffer* circularBufferRecv;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)

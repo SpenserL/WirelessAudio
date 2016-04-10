@@ -39,7 +39,7 @@ extern WSAEVENT acceptEvent;
 extern HANDLE hSendFile, hServ, hLog;
 extern LPSOCKET_INFORMATION SI;
 extern char errMsg[ERRORSIZE];
-CircularBuffer* circularBufferRecv;
+extern CircularBuffer* circularBufferRecv;
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
