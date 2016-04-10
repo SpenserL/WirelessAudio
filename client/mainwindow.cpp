@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     regex.setPattern("^(([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))\\.){3}([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))$");
     QValidator* val = new QRegExpValidator(regex, this);
     ui->ipAddr->setValidator(val);
-    ui->ipAddr->setText("192.168.1.147");
+    ui->ipAddr->setText("192.168.0.6");
     //ui->ipAddr->setText("127.0.0.1");
 }
 
