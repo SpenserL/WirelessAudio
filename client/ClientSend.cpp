@@ -13,20 +13,24 @@
 ////////// "Real" of the externs in Client.h ///////////////
 char address[100];
 SOCKET sendSock;
+bool sendSockOpen;
 struct sockaddr_in server;
 char errMsg[ERRORSIZE];
 
 /////////////////// Globals ////////////////////////////////
 HANDLE hSendFile;
+bool hSendOpen;
 
-int ClientSetup(char* addr) {
+int ClientSendSetup(char* addr)
+{
 	WSADATA WSAData;
 	WORD wVersionRequested;
 	struct hostent	*hp;
     strcpy(address, addr);
 
 	wVersionRequested = MAKEWORD(2, 2);
-	if (WSAStartup(wVersionRequested, &WSAData) != 0) {
+    if (WSAStartup(wVersionRequested, &WSAData) != 0)
+    {
         ShowLastErr(true);
         qDebug() << "DLL not found!\n";
 		return -1;
@@ -48,10 +52,10 @@ int ClientSetup(char* addr) {
     }*/
 
 	// Initialize and set up the address structure
-	memset((char *)&server, 0, sizeof(struct sockaddr_in));
-	server.sin_family = AF_INET;
-	server.sin_port = htons(SERVER_DEFAULT_PORT);
-	if ((hp = gethostbyname(address)) == NULL)
+    memset((char *)&server, 0, sizeof(struct sockaddr_in));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(SERVER_DEFAULT_PORT);
+    if ((hp = gethostbyname(address)) == NULL)
 	{
         ShowLastErr(true);
         qDebug() << "Unknown server address\n";
@@ -59,7 +63,7 @@ int ClientSetup(char* addr) {
 	}
 
 	// Copy the server address
-	memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
+    memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
 
 	
     // TCP Connecting to the server
@@ -69,6 +73,8 @@ int ClientSetup(char* addr) {
         qDebug() << "Can't connect to server\n";
         return -1;
     }
+
+    sendSockOpen = true;
 
     // UDP Connecting to the server (if needed in future) /////////////
     // Bind local address to the socket
@@ -87,9 +93,11 @@ int ClientSetup(char* addr) {
 	return 0;
 }
 
-int ClientSend(HANDLE hFile) {
+int ClientSend(HANDLE hFile)
+{
     HANDLE hThread;
     DWORD ThreadId;
+    hSendOpen = true;
 
     if ((hThread = CreateThread(NULL, 0, ClientSendThread, (LPVOID)hFile, 0, &ThreadId)) == NULL)
     {
@@ -100,11 +108,12 @@ int ClientSend(HANDLE hFile) {
     return 0;
 }
 
-DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
+DWORD WINAPI ClientSendThread(LPVOID lpParameter)
+{
     hSendFile = (HANDLE) lpParameter;
     char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE + 1, sizeof(char));
 	DWORD  dwBytesRead;
-    int sentBytes = 0, totalbytes = 0;
+    int sentBytes = 0;
 	while (true) {
         if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE, &dwBytesRead, NULL) == FALSE)
 		{
@@ -115,7 +124,6 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
         }
 
         if (dwBytesRead == 0) {
-            qDebug() << "End of file";
             ClientCleanup();
             return TRUE;
         }
@@ -124,17 +132,10 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
             sendbuff[dwBytesRead] = 4;
             sendbuff[dwBytesRead + 1] = 4;
             sendbuff[dwBytesRead + 2] = 4;
-            qDebug() << "Delimeter added";
         }
 
         // TCP Send
         sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
-        ShowLastErr(true);
-        totalbytes += sentBytes;
-        qDebug() << "total bytes:" << totalbytes;
-        qDebug() << "read bytes:" << dwBytesRead;
-        qDebug() << "sent bytes:" << sentBytes;
-
         // UDP send (if needed in future) //////////////////////
         //sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
         //ShowLastErr(true);
@@ -144,13 +145,33 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
 	return TRUE;
 }
 
-void ClientCleanup() {
-    closesocket(sendSock);
-    if (hSendFile) {
-        qDebug() << "File Handle Closed";
-        CloseHandle(hSendFile);
+void ClientCleanup()
+{
+    if (sendSockOpen)
+    {
+        closesocket(sendSock);
+        sendSockOpen = false;
     }
-    qDebug() << "WSACleanup called";
+    if (listenSockOpen)
+    {
+        closesocket(listenSockOpen);
+        listenSockOpen = false;
+    }
+    if (acceptSockOpen)
+    {
+        closesocket(acceptSock);
+        acceptSockOpen = false;
+    }
+    if (hSendOpen)
+    {
+        CloseHandle(hSendFile);
+        hSendOpen = false;
+    }
+    if (hReceiveOpen)
+    {
+        CloseHandle(hReceiveFile);
+        hReceiveOpen = false;
+    }
     WSACleanup();
 }
 
@@ -172,7 +193,8 @@ void ClientCleanup() {
 --		human-readable, understandable string from the error ID and outputs it to the
 --		Debug output console in the IDE.
 ---------------------------------------------------------------------------------------*/
-void ShowLastErr(bool wsa) {
+void ShowLastErr(bool wsa)
+{
     DWORD dlasterr;
     LPCTSTR errMsg = NULL;
     char errnum[100];
