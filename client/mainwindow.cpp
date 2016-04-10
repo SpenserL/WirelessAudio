@@ -6,13 +6,13 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-    //audioManager = new AudioManager(this);
+    audioManager = new AudioManager(this);
     QRegExp regex;
     regex.setPattern("^(([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))\\.){3}([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))$");
     QValidator* val = new QRegExpValidator(regex, this);
     ui->ipAddr->setValidator(val);
-    //ui->ipAddr->setText("192.168.1.147");
-    ui->ipAddr->setText("127.0.0.1");
+    ui->ipAddr->setText("192.168.1.147");
+    //ui->ipAddr->setText("127.0.0.1");
 }
 
 MainWindow::~MainWindow() {
@@ -25,7 +25,7 @@ void MainWindow::on_playButton_released()
     audioManager->stop();
     QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song"), 0, tr("Music (*.wav)")));
     audioManager->loadSong(file);
-    //audioManager->play();
+    audioManager->play();
 }
 
 void MainWindow::on_pauseButton_released()

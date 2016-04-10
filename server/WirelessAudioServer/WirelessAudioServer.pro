@@ -14,9 +14,11 @@ LIBS = -lws2_32
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    Server.cpp
+    Server.cpp \
+    ../../client/circularbuffer.cpp
 
 HEADERS  += mainwindow.h \
-    Server.h
+    Server.h \
+    ../../client/circularbuffer.h
 
 FORMS    += mainwindow.ui

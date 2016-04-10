@@ -102,13 +102,14 @@ int ClientSend(HANDLE hFile) {
 
 DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
     hSendFile = (HANDLE) lpParameter;
+    char *readbuff = (char *)calloc(CLIENT_PACKET_SIZE - 4, sizeof(char));
     char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE, sizeof(char));
+    char *packetsize = (char *)calloc(5, sizeof(char));
 	DWORD  dwBytesRead;
     int sentBytes = 0, sentpackets = 0, filesize = 0;
-    sendbuff[CLIENT_PACKET_SIZE] = '\0';
     qDebug() << "buffer contents: " << sendbuff;
 	while (true) {
-        if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE - 1, &dwBytesRead, NULL) == FALSE)
+        if (ReadFile(hSendFile, readbuff, CLIENT_PACKET_SIZE - 5, &dwBytesRead, NULL) == FALSE)
 		{
             ShowLastErr(false);
             qDebug() << "Couldn't read file";
@@ -123,8 +124,12 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
         }
         else if (dwBytesRead > 0 && dwBytesRead < (DWORD)CLIENT_PACKET_SIZE - 1)
 		{
-			sendbuff[dwBytesRead] = '\0';
+            readbuff[dwBytesRead] = '\0';
 		}
+
+        sprintf(packetsize, "%04lu", dwBytesRead + 4);
+        strcpy(sendbuff, packetsize);
+        strcat(sendbuff, readbuff);
 
         // TCP Send
         sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
