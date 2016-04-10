@@ -9,16 +9,16 @@
 #include "Server.h"
 
 ////////// "Real" of the externs in Server.h ///////////////
-char address[100], packet[CLIENT_PACKET_SIZE];
 SOCKET listenSock, acceptSock;
 bool listenSockOpen, acceptSockOpen;
-struct sockaddr_in server;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
+bool hReceiveOpen;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
 
-int ServerSetup()
+
+int ServerReceiveSetup()
 {
 
     int ret;
@@ -87,6 +87,7 @@ int ServerListen(HANDLE hFile)
 {
     HANDLE hThread;
     DWORD ThreadId;
+    hReceiveOpen = true;
 
     if ((hThread = CreateThread(NULL, 0, ServerListenThread, (LPVOID) hFile, 0, &ThreadId)) == NULL)
     {
@@ -181,7 +182,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
         acceptSockOpen = true;
         qDebug() << errMsg;
 
-
         Flags = 0;
         // TCP WSA receive
         if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
@@ -201,7 +201,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
             qDebug() << errMsg;
             return FALSE;
         }
-
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -283,7 +282,7 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 
     while(!lastPacket)
     {
-        if (circularBufferRecv->length > 0)
+        if (circularBufferRecv->length > 0 && (circularBufferRecv->length % 2) == 0)
         {
             circularBufferRecv->pop(sizeBuf);
             sizeBuf[5] = '\0';
@@ -307,20 +306,31 @@ DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 
 void ServerCleanup()
 {
+    if (sendSockOpen)
+    {
+        closesocket(sendSock);
+        sendSockOpen = false;
+    }
     if (acceptSockOpen)
     {
         closesocket(acceptSock);
         acceptSockOpen = false;
-        qDebug() << "AcceptSock closed";
     }
-    closesocket(listenSock);
-    qDebug() << "ListenSock closed";
-    if (hReceiveFile)
+    if (listenSockOpen)
+    {
+        closesocket(listenSock);
+        listenSockOpen = false;
+    }
+    if (hReceiveOpen)
     {
         CloseHandle(hReceiveFile);
-        qDebug() << "File handle closed";
+        hReceiveOpen = false;
     }
-    qDebug() << "WSACleanup called";
+    if (hSendOpen)
+    {
+        CloseHandle(hSendFile);
+        hSendOpen = false;
+    }
     WSACleanup();
 }
 

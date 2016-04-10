@@ -14,36 +14,94 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QPushButton" name="pushButton">
+   <widget class="QPushButton" name="openIncoming">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>50</x>
+      <y>60</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open Incoming</string>
+    </property>
+    <property name="autoDefault">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="disconnectIncoming">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>90</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Disconnect Incoming</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="connectOutgoing">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>60</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Connect Outgoing</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="disconnectOutgoing">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>90</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Disconnect Outgoing</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="sendBtn">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>230</x>
       <y>120</y>
       <width>75</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
-     <string>Connect</string>
-    </property>
-    <property name="autoDefault">
-     <bool>false</bool>
+     <string>Send</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_2">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
+   <widget class="QLineEdit" name="ipAddr">
     <property name="geometry">
      <rect>
-      <x>150</x>
-      <y>150</y>
-      <width>75</width>
-      <height>23</height>
+      <x>210</x>
+      <y>30</y>
+      <width>113</width>
+      <height>20</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Disconnect</string>
+    <property name="maxLength">
+     <number>15</number>
     </property>
    </widget>
   </widget>

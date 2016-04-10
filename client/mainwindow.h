@@ -29,15 +29,19 @@ private slots:
 
     void on_skipBackwardsButton_released();
 
-    void on_actionConnect_triggered();
-
-    void on_actionDisconnect_triggered();
-
     void on_sendBtn_clicked();
 
     void on_pushButton_clicked();
 
     void on_pushButton_2_clicked();
+
+    void on_connectOutgoing_clicked();
+
+    void on_disconnectOutgoing_clicked();
+
+    void on_openIncoming_clicked();
+
+    void on_disconnectIncoming_clicked();
 
 private:
     Ui::MainWindow *ui;

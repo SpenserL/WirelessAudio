@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>414</width>
+    <height>417</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>180</y>
+      <y>230</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -31,7 +31,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>200</y>
+      <y>250</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -44,7 +44,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>220</y>
+      <y>270</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -57,7 +57,7 @@
     <property name="geometry">
      <rect>
       <x>240</x>
-      <y>200</y>
+      <y>250</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -70,7 +70,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>200</y>
+      <y>250</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -82,11 +82,14 @@
    <widget class="QLineEdit" name="ipAddr">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>20</x>
       <y>20</y>
       <width>113</width>
       <height>20</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>15</number>
     </property>
    </widget>
    <widget class="QPushButton" name="sendBtn">
@@ -95,8 +98,8 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>160</x>
-      <y>50</y>
+      <x>40</x>
+      <y>110</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -109,7 +112,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>130</y>
+      <y>180</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -122,7 +125,7 @@
     <property name="geometry">
      <rect>
       <x>160</x>
-      <y>90</y>
+      <y>140</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -131,24 +134,74 @@
      <string>StopRecord</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="connectOutgoing">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>50</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Connect Outgoing</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="disconnectOutgoing">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>80</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Disconnect Outgoing</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="openIncoming">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>20</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open Incoming</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="disconnectIncoming">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>50</y>
+      <width>111</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Disconnect Incoming</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
-     <height>17</height>
+     <width>414</width>
+     <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionConnect"/>
-    <addaction name="actionDisconnect"/>
-   </widget>
-   <addaction name="menuFile"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -159,19 +212,6 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionConnect">
-   <property name="text">
-    <string>Connect</string>
-   </property>
-  </action>
-  <action name="actionDisconnect">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Disconnect</string>
-   </property>
-  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
