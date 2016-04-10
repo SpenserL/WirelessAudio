@@ -19,7 +19,7 @@ char errMsg[ERRORSIZE];
 /////////////////// Globals ////////////////////////////////
 HANDLE hSendFile;
 
-int ClientSetup(char* addr) {
+int ClientSendSetup(char* addr) {
 	WSADATA WSAData;
 	WORD wVersionRequested;
 	struct hostent	*hp;
@@ -48,10 +48,10 @@ int ClientSetup(char* addr) {
     }*/
 
 	// Initialize and set up the address structure
-	memset((char *)&server, 0, sizeof(struct sockaddr_in));
-	server.sin_family = AF_INET;
-	server.sin_port = htons(SERVER_DEFAULT_PORT);
-	if ((hp = gethostbyname(address)) == NULL)
+    memset((char *)&server, 0, sizeof(struct sockaddr_in));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(SERVER_DEFAULT_PORT);
+    if ((hp = gethostbyname(address)) == NULL)
 	{
         ShowLastErr(true);
         qDebug() << "Unknown server address\n";
@@ -59,7 +59,7 @@ int ClientSetup(char* addr) {
 	}
 
 	// Copy the server address
-	memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
+    memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
 
 	
     // TCP Connecting to the server
