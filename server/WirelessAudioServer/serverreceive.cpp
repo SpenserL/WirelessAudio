@@ -17,22 +17,21 @@ WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
-int packetNum, totalBytes, totalBytesWritten, thisPacketSize;
 
 int ServerSetup()
 {
 
-	int ret;
-	WSADATA wsaData;
+    int ret;
+    WSADATA wsaData;
     SOCKADDR_IN InternetAddr;
 
-	if ((ret = WSAStartup(0x0202, &wsaData)) != 0)
-	{
+    if ((ret = WSAStartup(0x0202, &wsaData)) != 0)
+    {
         sprintf_s(errMsg, ERRORSIZE, "WSAStartup failed with error %d\n", ret);
         qDebug() << errMsg;
-		WSACleanup();
-		return -1;
-	}
+        WSACleanup();
+        return -1;
+    }
 
     // TCP create WSA socket
     if ((listenSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
@@ -53,17 +52,17 @@ int ServerSetup()
     }*/
 
 
-	InternetAddr.sin_family = AF_INET;
-	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(SERVER_DEFAULT_PORT);
+    InternetAddr.sin_family = AF_INET;
+    InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    InternetAddr.sin_port = htons(SERVER_DEFAULT_PORT);
 
     if (bind(listenSock, (PSOCKADDR)&InternetAddr,
-		sizeof(InternetAddr)) == SOCKET_ERROR)
-	{
+        sizeof(InternetAddr)) == SOCKET_ERROR)
+    {
         sprintf_s(errMsg, "bind() failed with error %d\n", WSAGetLastError());
         qDebug() << errMsg;
-		return -1;
-	}
+        return -1;
+    }
     // TCP listen on socket (no corresponding UDP call)
     if (listen(listenSock, 5))
     {
@@ -74,14 +73,14 @@ int ServerSetup()
     listenSockOpen = true;
 
     if ((acceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
-	{
+    {
         sprintf_s(errMsg, "WSACreateEvent() failed with error %d\n", WSAGetLastError());
         qDebug() << errMsg;
-		return -1;
-	}
+        return -1;
+    }
 
     qDebug() << "Success!";
-	return 0;
+    return 0;
 }
 
 int ServerListen(HANDLE hFile)
@@ -100,91 +99,90 @@ int ServerListen(HANDLE hFile)
 
 DWORD WINAPI ServerListenThread(LPVOID lpParameter)
 {
-	HANDLE hThread;
+    HANDLE hThread;
     DWORD ThreadId;
 
     if ((hThread = CreateThread(NULL, 0, ServerReceiveThread, lpParameter, 0, &ThreadId)) == NULL)
-	{
+    {
         sprintf_s(errMsg, "Create ServerReceiveThread failed with error %lu\n", GetLastError());
         qDebug() << errMsg;
-		return FALSE;
-	}
+        return FALSE;
+    }
 
-	while (TRUE)
-	{
+    while (TRUE)
+    {
         acceptSock = accept(listenSock, NULL, NULL);
 
         if (WSASetEvent(acceptEvent) == FALSE)
-		{
+        {
             sprintf_s(errMsg, "WSASetEvent failed with error %d\n", WSAGetLastError());
             qDebug() << errMsg;
-			return FALSE;
-		}
-	}
-	return TRUE;
+            return FALSE;
+        }
+    }
+    return TRUE;
 }
 
 DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
 {
-	WSAEVENT EventArray[1];
+    WSAEVENT EventArray[1];
     HANDLE hThread;
     DWORD Index, RecvBytes, Flags, LastErr, ThreadId;
     LPSOCKET_INFORMATION SocketInfo;
-    packetNum = 0, totalBytes = 0;
 
-	// Save the accept event in the event array.
+    // Save the accept event in the event array.
 
     EventArray[0] = acceptEvent;
 
-	while (TRUE)
-	{
-		// Wait for accept() to signal an event and also process WorkerRoutine() returns.
+    while (TRUE)
+    {
+        // Wait for accept() to signal an event and also process WorkerRoutine() returns.
 
-		while (TRUE)
-		{
-			Index = WSAWaitForMultipleEvents(1, EventArray, FALSE, WSA_INFINITE, TRUE);
+        while (TRUE)
+        {
+            Index = WSAWaitForMultipleEvents(1, EventArray, FALSE, WSA_INFINITE, TRUE);
 
-			if (Index == WSA_WAIT_FAILED)
-			{
+            if (Index == WSA_WAIT_FAILED)
+            {
                 sprintf_s(errMsg, "WSAWaitForMultipleEvents failed with error %d\n", WSAGetLastError());
                 qDebug() << errMsg;
-				return FALSE;
-			}
+                return FALSE;
+            }
 
-			if (Index != WAIT_IO_COMPLETION)
-			{
-				// An accept() call event is ready - break the wait loop
-				break;
-			}
-		}
+            if (Index != WAIT_IO_COMPLETION)
+            {
+                // An accept() call event is ready - break the wait loop
+                break;
+            }
+        }
 
-		WSAResetEvent(EventArray[Index - WSA_WAIT_EVENT_0]);
+        WSAResetEvent(EventArray[Index - WSA_WAIT_EVENT_0]);
 
-		// Create a socket information structure to associate with the accepted socket.
+        // Create a socket information structure to associate with the accepted socket.
 
-		if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR,
-			sizeof(SOCKET_INFORMATION))) == NULL)
-		{
+        if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR,
+            sizeof(SOCKET_INFORMATION))) == NULL)
+        {
             sprintf_s(errMsg, "GlobalAlloc() failed with error %d\n", GetLastError());
             qDebug() << errMsg;
-			return FALSE;
-		}
+            return FALSE;
+        }
 
-		// Fill in the details of our accepted socket.
+        // Fill in the details of our accepted socket.
 
         SocketInfo->Socket = acceptSock;
-		ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
-		SocketInfo->BytesSEND = 0;
-		SocketInfo->BytesRECV = 0;
+        ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
+        SocketInfo->BytesSEND = 0;
+        SocketInfo->BytesRECV = 0;
         SocketInfo->DataBuf.len = CLIENT_PACKET_SIZE;
-		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
+        SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 
         sprintf_s(errMsg, "Socket %d connected\n", acceptSock);
         acceptSockOpen = true;
         qDebug() << errMsg;
 
-		
-		Flags = 0;
+
+        Flags = 0;
         // TCP WSA receive
         if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -196,8 +194,6 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
                 return FALSE;
             }
         }
-        packetNum++;
-        totalBytes += RecvBytes;
 
         if ((hThread = CreateThread(NULL, 0, ServerWriteToFileThread, lpParameter, 0, &ThreadId)) == NULL)
         {
@@ -218,116 +214,95 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
                 return FALSE;
             }
         }*/
-	}
+    }
 
-	return TRUE;
+    return TRUE;
 }
 
 void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
-	LPWSAOVERLAPPED Overlapped, DWORD InFlags)
+    LPWSAOVERLAPPED Overlapped, DWORD InFlags)
 {
     DWORD RecvBytes, Flags, LastErr;
-	// Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
+    // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
     SI = (LPSOCKET_INFORMATION)Overlapped;
 
-	if (Error != 0)
-	{
+    if (Error != 0)
+    {
         sprintf_s(errMsg, "I/O operation failed with error %d\n", Error);
         qDebug() << errMsg;
-	}
+    }
 
-	if (BytesTransferred == 0)
-	{
+    if (BytesTransferred == 0)
+    {
         sprintf_s(errMsg, "Closing socket %d\n", SI->Socket);
         qDebug() << errMsg;
-	}
+    }
 
-	if (Error != 0 || BytesTransferred == 0)
-	{
+    if (Error != 0 || BytesTransferred == 0)
+    {
         closesocket(SI->Socket);
         acceptSockOpen = false;
-		GlobalFree(SI);
-		return;
+        GlobalFree(SI);
+        return;
     }
-    char slotsize[5];
+
+    char slotsize[CLIENT_PACKET_SIZE];
     sprintf(slotsize, "%04lu", BytesTransferred);
     if ((circularBufferRecv->pushBack(slotsize)) == false || (circularBufferRecv->pushBack(SI->DataBuf.buf)) == false)
     {
         qDebug() << "Writing received packet to circular buffer failed";
     }
 
-
-    sprintf_s(errMsg, "Bytes received: %d\n", BytesTransferred);
-    qDebug() << errMsg;
-    qDebug() << "Packet num" << packetNum;
-    qDebug() << "Total bytes" << totalBytes;
-    packetNum++;
-    totalBytes += BytesTransferred;
-
-	Flags = 0;
-	ZeroMemory(&(SI->Overlapped), sizeof(WSAOVERLAPPED));
+    Flags = 0;
+    ZeroMemory(&(SI->Overlapped), sizeof(WSAOVERLAPPED));
 
     SI->DataBuf.len = CLIENT_PACKET_SIZE;
-	SI->DataBuf.buf = SI->Buffer;
+    SI->DataBuf.buf = SI->Buffer;
 
-	if (WSARecv(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
-		&(SI->Overlapped), ServerCallback) == SOCKET_ERROR)
-	{
+    if (WSARecv(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
+        &(SI->Overlapped), ServerCallback) == SOCKET_ERROR)
+    {
         if ((LastErr = WSAGetLastError()) != WSA_IO_PENDING)
-		{
+        {
             sprintf_s(errMsg, "WSARecv() failed with error %d\n", LastErr);
             qDebug() << errMsg;
-			return;
-		}
-	}
+            return;
+        }
+    }
 }
 
 DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
 {
     DWORD byteswrittenfile = 0;
-    char buf[circularBufferRecv->elementLength];
+    char sizeBuf[circularBufferRecv->elementLength];
+    char writeBuf[circularBufferRecv->elementLength];
+    char delim[4] = {4, 4, 4, '\0'}, *ptrEnd, *ptrBegin = writeBuf;
+    int packetSize;
+    bool lastPacket = false;
     hReceiveFile = (HANDLE) lpParameter;
 
-    while(true)
+    while(!lastPacket)
     {
-        // When the socket closes, no more data is going to arrive,
-        // but make sure to empty the circular buffer before stopping
-        if (!acceptSockOpen)
+        if (circularBufferRecv->length > 0)
         {
-            circularBufferRecv->pop(buf);
-            if (WriteFile(hReceiveFile, buf, circularBufferRecv->elementLength, &byteswrittenfile, NULL) == FALSE)
+            circularBufferRecv->pop(sizeBuf);
+            sizeBuf[5] = '\0';
+            packetSize = strtol(sizeBuf, NULL, 10);
+            circularBufferRecv->pop(writeBuf);
+            if ((ptrEnd = strstr(writeBuf, delim)))
+            {
+                lastPacket = true;
+                packetSize = ptrEnd - ptrBegin;
+            }
+            if (WriteFile(hReceiveFile, writeBuf, packetSize, &byteswrittenfile, NULL) == FALSE)
             {
                 qDebug() << "Couldn't write to server file\n";
                 ShowLastErr(false);
                 return FALSE;
             }
-            ShowLastErr(false);
-            totalBytesWritten += byteswrittenfile;
-            qDebug() << "Bytes written:" << byteswrittenfile;
-            qDebug() << "Total bytes written" << totalBytesWritten;
-            if (circularBufferRecv->length == 0)
-            {
-                qDebug() << "Finished writing";
-                CloseHandle(hReceiveFile);
-                return TRUE;
-            }
-        // Normal execution while socket open and buffer has contents to pop
-        } else if (circularBufferRecv->length > 0)
-        {
-            circularBufferRecv->pop(buf);
-            if (WriteFile(hReceiveFile, buf, circularBufferRecv->elementLength, &byteswrittenfile, NULL) == FALSE)
-            {
-                qDebug() << "Couldn't write to server file\n";
-                ShowLastErr(false);
-                return FALSE;
-            }
-            ShowLastErr(false);
-            totalBytesWritten += byteswrittenfile;
-            qDebug() << "Bytes written:" << byteswrittenfile;
-            qDebug() << "Total bytes written" << totalBytesWritten;
         }
     }
-    return FALSE;
+    return TRUE;
 }
 
 void ServerCleanup()

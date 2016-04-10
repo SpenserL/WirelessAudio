@@ -102,14 +102,12 @@ int ClientSend(HANDLE hFile) {
 
 DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
     hSendFile = (HANDLE) lpParameter;
-    char *readbuff = (char *)calloc(CLIENT_PACKET_SIZE - 4, sizeof(char));
-    char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE, sizeof(char));
-    char *packetsize = (char *)calloc(5, sizeof(char));
+    char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE + 1, sizeof(char));
 	DWORD  dwBytesRead;
-    int sentBytes = 0, sentpackets = 0, filesize = 0;
+    int sentBytes = 0;
     qDebug() << "buffer contents: " << sendbuff;
 	while (true) {
-        if (ReadFile(hSendFile, readbuff, CLIENT_PACKET_SIZE - 5, &dwBytesRead, NULL) == FALSE)
+        if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE, &dwBytesRead, NULL) == FALSE)
 		{
             ShowLastErr(false);
             qDebug() << "Couldn't read file";
@@ -122,22 +120,16 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter) {
             ClientCleanup();
             return TRUE;
         }
-        else if (dwBytesRead > 0 && dwBytesRead < (DWORD)CLIENT_PACKET_SIZE - 1)
-		{
-            readbuff[dwBytesRead] = '\0';
-		}
-
-        sprintf(packetsize, "%04lu", dwBytesRead + 4);
-        strcpy(sendbuff, packetsize);
-        strcat(sendbuff, readbuff);
+        else if (dwBytesRead > 0 && dwBytesRead < (DWORD)CLIENT_PACKET_SIZE)
+        {
+            sendbuff[dwBytesRead] = 4;
+            sendbuff[dwBytesRead + 1] = 4;
+            sendbuff[dwBytesRead + 2] = 4;
+        }
 
         // TCP Send
         sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
         ShowLastErr(true);
-        sentpackets++;
-        filesize += dwBytesRead;
-        qDebug() << "Packet" << sentpackets << "sent";
-        qDebug() << "Total bytes sent:" << filesize;
 
         // UDP send (if needed in future) //////////////////////
         //sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
