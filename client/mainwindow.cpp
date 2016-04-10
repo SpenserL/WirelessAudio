@@ -10,15 +10,15 @@
 QFile dFile;
 QAudioInput * audio;
 CircularBuffer * cb;
-QBuffer *buffer;
+QBuffer *microphoneBuffer;
 bool isRecording;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
     isRecording = false;
     audioManager = new AudioManager(this);
-    buffer = new QBuffer(parent);
-    audioManager->Init(buffer);
+    microphoneBuffer = new QBuffer(parent);
+    audioManager->Init(microphoneBuffer);
 
     QRegExp regex;
     regex.setPattern("^(([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))\\.){3}([01]?[0-9]?[0-9]|2([0-4][0-9]|5[0-5]))$");
@@ -103,7 +103,7 @@ void MainWindow::on_pushButton_clicked()
      //QID(myQB);
     //cb(128000,64000);
      //dFile.setFileName("../RecordTest.raw");
-     buffer->open( QIODevice::ReadWrite);
+     microphoneBuffer->open( QIODevice::ReadWrite);
      QAudioFormat format;
      // Set up the desired format, for example:
      format.setSampleRate(16000);
@@ -124,7 +124,7 @@ void MainWindow::on_pushButton_clicked()
 
      //QTimer::singleShot(5000, this, SLOT(on_pushButton_2_clicked()));
      isRecording = true;
-     audio->start(buffer);
+     audio->start(microphoneBuffer);
 }
 
 void MainWindow::on_pushButton_2_clicked()

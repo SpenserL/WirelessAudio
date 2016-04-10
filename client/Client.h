@@ -3,6 +3,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include <QBuffer>
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);

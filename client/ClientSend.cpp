@@ -105,7 +105,7 @@ int ClientSendMicrophoneData(HANDLE hFile) {
     HANDLE hThread;
     DWORD ThreadId;
 
-    if ((hThread = CreateThread(NULL, 0, ClientSendMicrophoneThread(), (LPVOID)hFile, 0, &ThreadId)) == NULL) {
+    if ((hThread = CreateThread(NULL, 0, ClientSendMicrophoneThread, (LPVOID)hFile, 0, &ThreadId)) == NULL) {
         ShowLastErr(false);
         qDebug() << "Create ClientSendMicrophoneThread failed";
         return -1;
@@ -163,7 +163,7 @@ DWORD WINAPI ClientSendMicrophoneThread(LPVOID lpParameter) {
 
     while (isRecording) {
         microphoneBuffer->seek(0);
-        dwBytesRead = microphoneBuffer->readData(sendbuff, CLIENT_PACKET_SIZE);
+        dwBytesRead = microphoneBuffer->read(sendbuff, CLIENT_PACKET_SIZE);
 
         if (dwBytesRead > 0) {
             // TCP Send
