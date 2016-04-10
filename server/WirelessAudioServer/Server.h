@@ -3,6 +3,7 @@
 
 #include <winsock2.h>
 #include <Windows.h>
+#include "../../client/circularbuffer.h"
 
 ///////////////////// Macros //////////////////////////////
 #define SERVER_DEFAULT_PORT	7000
@@ -38,6 +39,7 @@ extern WSAEVENT acceptEvent;
 extern HANDLE hSendFile, hServ, hLog;
 extern LPSOCKET_INFORMATION SI;
 extern char errMsg[ERRORSIZE];
+extern CircularBuffer* circularBufferRecv;
 
 ///////////////////// Global Prototypes ///////////////////
 void ShowLastErr(bool wsa);
@@ -48,5 +50,6 @@ void ServerCleanup();
 DWORD WINAPI ServerReceiveThread(LPVOID lpParameter);
 void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
     LPWSAOVERLAPPED Overlapped, DWORD InFlags);
+DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter);
 
 #endif

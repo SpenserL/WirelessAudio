@@ -5,19 +5,22 @@
 #include <stdio.h>
 #include <QDebug>
 #include <QString>
+#include <QBuffer>
 #include "Server.h"
 
 ////////// "Real" of the externs in Server.h ///////////////
-char address[100];
+char address[100], packet[CLIENT_PACKET_SIZE];
 SOCKET listenSock, acceptSock;
+bool listenSockOpen, acceptSockOpen;
 struct sockaddr_in server;
 WSAEVENT acceptEvent;
 HANDLE hReceiveFile;
 LPSOCKET_INFORMATION SI;
 char errMsg[ERRORSIZE];
-int packetNum, totalBytes, totalBytesWritten;
+int packetNum, totalBytes, totalBytesWritten, thisPacketSize;
 
-int ServerSetup() {
+int ServerSetup()
+{
 
 	int ret;
 	WSADATA wsaData;
@@ -33,7 +36,8 @@ int ServerSetup() {
 
     // TCP create WSA socket
     if ((listenSock = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
-        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
+        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
+    {
         sprintf_s(errMsg, "Failed to get a socket %d\n", WSAGetLastError());
         qDebug() << errMsg;
         return -1;
@@ -41,7 +45,8 @@ int ServerSetup() {
 
     // UDP create WSA socket (if needed in future) ////////////////////////
     /*if ((listenSock = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
-        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
+        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
+    {
         sprintf_s(errMsg, "Failed to get a socket %d\n", WSAGetLastError());
         qDebug() << errMsg;
         return -1;
@@ -66,6 +71,7 @@ int ServerSetup() {
         qDebug() << errMsg;
         return -1;
     }
+    listenSockOpen = true;
 
     if ((acceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
 	{
@@ -78,7 +84,8 @@ int ServerSetup() {
 	return 0;
 }
 
-int ServerListen(HANDLE hFile) {
+int ServerListen(HANDLE hFile)
+{
     HANDLE hThread;
     DWORD ThreadId;
 
@@ -91,7 +98,8 @@ int ServerListen(HANDLE hFile) {
     return 0;
 }
 
-DWORD WINAPI ServerListenThread(LPVOID lpParameter) {
+DWORD WINAPI ServerListenThread(LPVOID lpParameter)
+{
 	HANDLE hThread;
     DWORD ThreadId;
 
@@ -116,12 +124,13 @@ DWORD WINAPI ServerListenThread(LPVOID lpParameter) {
 	return TRUE;
 }
 
-DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
+DWORD WINAPI ServerReceiveThread(LPVOID lpParameter)
+{
 	WSAEVENT EventArray[1];
-    DWORD Index, RecvBytes, Flags, LastErr;
+    HANDLE hThread;
+    DWORD Index, RecvBytes, Flags, LastErr, ThreadId;
     LPSOCKET_INFORMATION SocketInfo;
     packetNum = 0, totalBytes = 0;
-    hReceiveFile = (HANDLE) lpParameter;
 
 	// Save the accept event in the event array.
 
@@ -171,6 +180,7 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 
         sprintf_s(errMsg, "Socket %d connected\n", acceptSock);
+        acceptSockOpen = true;
         qDebug() << errMsg;
 
 		
@@ -188,6 +198,14 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
         }
         packetNum++;
         totalBytes += RecvBytes;
+
+        if ((hThread = CreateThread(NULL, 0, ServerWriteToFileThread, lpParameter, 0, &ThreadId)) == NULL)
+        {
+            sprintf_s(errMsg, "Create ServerWriteToFileThread failed with error %lu\n", GetLastError());
+            qDebug() << errMsg;
+            return FALSE;
+        }
+
         // UDP WSA receive (if needed in future) //////////////////////////////////
         /*if (WSARecvFrom(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
             (SOCKADDR *)&ClientAddr, &clientaddrsize, &(SocketInfo->Overlapped), ServerCallback) == SOCKET_ERROR)
@@ -208,7 +226,7 @@ DWORD WINAPI ServerReceiveThread(LPVOID lpParameter) {
 void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	LPWSAOVERLAPPED Overlapped, DWORD InFlags)
 {
-    DWORD RecvBytes, Flags, byteswrittenfile = 0, LastErr;
+    DWORD RecvBytes, Flags, LastErr;
 	// Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
     SI = (LPSOCKET_INFORMATION)Overlapped;
 
@@ -226,25 +244,23 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 
 	if (Error != 0 || BytesTransferred == 0)
 	{
-		closesocket(SI->Socket);
-        CloseHandle(hReceiveFile);
+        closesocket(SI->Socket);
+        acceptSockOpen = false;
 		GlobalFree(SI);
 		return;
     }
+    char slotsize[5];
+    sprintf(slotsize, "%04lu", BytesTransferred);
+    if ((circularBufferRecv->pushBack(slotsize)) == false || (circularBufferRecv->pushBack(SI->DataBuf.buf)) == false)
+    {
+        qDebug() << "Writing received packet to circular buffer failed";
+    }
 
-    if (WriteFile(hReceiveFile, SI->DataBuf.buf, strlen(SI->DataBuf.buf), &byteswrittenfile, NULL) == FALSE) {
-        qDebug() << "Couldn't write to server file\n";
-		ShowLastErr(false);
-	}
-    ShowLastErr(false);
 
-    totalBytesWritten += byteswrittenfile;
     sprintf_s(errMsg, "Bytes received: %d\n", BytesTransferred);
     qDebug() << errMsg;
-    qDebug() << "Bytes written:" << byteswrittenfile;
     qDebug() << "Packet num" << packetNum;
     qDebug() << "Total bytes" << totalBytes;
-    qDebug() << "Total bytes written" << totalBytesWritten;
     packetNum++;
     totalBytes += BytesTransferred;
 
@@ -266,14 +282,66 @@ void CALLBACK ServerCallback(DWORD Error, DWORD BytesTransferred,
 	}
 }
 
-void ServerCleanup() {
-    qDebug() << "ListenSock closed";
-    closesocket(listenSock);
-    if (acceptSock) {
+DWORD WINAPI ServerWriteToFileThread(LPVOID lpParameter)
+{
+    DWORD byteswrittenfile = 0;
+    char buf[circularBufferRecv->elementLength];
+    hReceiveFile = (HANDLE) lpParameter;
+
+    while(true)
+    {
+        // When the socket closes, no more data is going to arrive,
+        // but make sure to empty the circular buffer before stopping
+        if (!acceptSockOpen)
+        {
+            circularBufferRecv->pop(buf);
+            if (WriteFile(hReceiveFile, buf, circularBufferRecv->elementLength, &byteswrittenfile, NULL) == FALSE)
+            {
+                qDebug() << "Couldn't write to server file\n";
+                ShowLastErr(false);
+                return FALSE;
+            }
+            ShowLastErr(false);
+            totalBytesWritten += byteswrittenfile;
+            qDebug() << "Bytes written:" << byteswrittenfile;
+            qDebug() << "Total bytes written" << totalBytesWritten;
+            if (circularBufferRecv->length == 0)
+            {
+                qDebug() << "Finished writing";
+                CloseHandle(hReceiveFile);
+                return TRUE;
+            }
+        // Normal execution while socket open and buffer has contents to pop
+        } else if (circularBufferRecv->length > 0)
+        {
+            circularBufferRecv->pop(buf);
+            if (WriteFile(hReceiveFile, buf, circularBufferRecv->elementLength, &byteswrittenfile, NULL) == FALSE)
+            {
+                qDebug() << "Couldn't write to server file\n";
+                ShowLastErr(false);
+                return FALSE;
+            }
+            ShowLastErr(false);
+            totalBytesWritten += byteswrittenfile;
+            qDebug() << "Bytes written:" << byteswrittenfile;
+            qDebug() << "Total bytes written" << totalBytesWritten;
+        }
+    }
+    return FALSE;
+}
+
+void ServerCleanup()
+{
+    if (acceptSockOpen)
+    {
         closesocket(acceptSock);
+        acceptSockOpen = false;
         qDebug() << "AcceptSock closed";
     }
-    if (hReceiveFile) {
+    closesocket(listenSock);
+    qDebug() << "ListenSock closed";
+    if (hReceiveFile)
+    {
         CloseHandle(hReceiveFile);
         qDebug() << "File handle closed";
     }
@@ -299,14 +367,17 @@ void ServerCleanup() {
 --		human-readable, understandable string from the error ID and outputs it to the
 --		Debug output console in the IDE.
 ---------------------------------------------------------------------------------------*/
-void ShowLastErr(bool wsa) {
+void ShowLastErr(bool wsa)
+{
     DWORD dlasterr;
     LPCTSTR errMsg = NULL;
     char errnum[100];
-    if (wsa == true) {
+    if (wsa == true)
+    {
         dlasterr = WSAGetLastError();
     }
-    else {
+    else
+    {
         dlasterr = GetLastError();
     }
     sprintf_s(errnum, "Error number: %d\n", dlasterr);
