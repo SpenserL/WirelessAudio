@@ -17,6 +17,7 @@ HANDLE hReceiveFile;
 bool hReceiveOpen;
 LPSOCKET_INFORMATION SI;
 
+
 int ClientReceiveSetup()
 {
     int ret;
@@ -282,7 +283,7 @@ DWORD WINAPI ClientWriteToFileThread(LPVOID lpParameter)
 
     while(!lastPacket)
     {
-        if (circularBufferRecv->length > 0)
+        if (circularBufferRecv->length > 0 && (circularBufferRecv->length % 2) == 0)
         {
             circularBufferRecv->pop(sizeBuf);
             sizeBuf[5] = '\0';

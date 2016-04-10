@@ -113,7 +113,7 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter)
     hSendFile = (HANDLE) lpParameter;
     char *sendbuff = (char *)calloc(CLIENT_PACKET_SIZE + 1, sizeof(char));
 	DWORD  dwBytesRead;
-    int sentBytes = 0, totalbytes = 0;
+    int sentBytes = 0;
 	while (true) {
         if (ReadFile(hSendFile, sendbuff, CLIENT_PACKET_SIZE, &dwBytesRead, NULL) == FALSE)
 		{
@@ -124,7 +124,6 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter)
         }
 
         if (dwBytesRead == 0) {
-            qDebug() << "End of file";
             ClientCleanup();
             return TRUE;
         }
@@ -133,17 +132,10 @@ DWORD WINAPI ClientSendThread(LPVOID lpParameter)
             sendbuff[dwBytesRead] = 4;
             sendbuff[dwBytesRead + 1] = 4;
             sendbuff[dwBytesRead + 2] = 4;
-            qDebug() << "Delimeter added";
         }
 
         // TCP Send
         sentBytes = send(sendSock, sendbuff, CLIENT_PACKET_SIZE, 0);
-        ShowLastErr(true);
-        totalbytes += sentBytes;
-        qDebug() << "total bytes:" << totalbytes;
-        qDebug() << "read bytes:" << dwBytesRead;
-        qDebug() << "sent bytes:" << sentBytes;
-
         // UDP send (if needed in future) //////////////////////
         //sentBytes = sendto(clientparam->sock, sendbuff, clientparam->size, 0, (struct sockaddr *)&sockadd, sizeof(sockadd));
         //ShowLastErr(true);

@@ -29,10 +29,6 @@ private slots:
 
     void on_skipBackwardsButton_released();
 
-    void on_actionConnect_triggered();
-
-    void on_actionDisconnect_triggered();
-
     void on_sendBtn_clicked();
 
     void on_pushButton_clicked();
