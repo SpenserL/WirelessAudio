@@ -32,5 +32,7 @@ extern char address[100];
 extern SOCKET sendSock;
 extern struct sockaddr_in server;
 extern char errMsg[ERRORSIZE];
+extern bool isRecording;
+extern QBuffer *microphoneBuffer;
 
 #endif

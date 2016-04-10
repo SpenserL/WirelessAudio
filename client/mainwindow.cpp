@@ -11,9 +11,11 @@ QFile dFile;
 QAudioInput * audio;
 CircularBuffer * cb;
 QBuffer *buffer;
+bool isRecording;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    isRecording = false;
     audioManager = new AudioManager(this);
     buffer = new QBuffer(parent);
     audioManager->Init(buffer);
@@ -120,12 +122,14 @@ void MainWindow::on_pushButton_clicked()
      audio = new QAudioInput(format, this);
      connect(audio, SIGNAL(stateChanged(QAudio::State)), this, SLOT(handleStateChanged(QAudio::State)));
 
-     QTimer::singleShot(5000, this, SLOT(on_pushButton_2_clicked()));
+     //QTimer::singleShot(5000, this, SLOT(on_pushButton_2_clicked()));
+     isRecording = true;
      audio->start(buffer);
 }
 
 void MainWindow::on_pushButton_2_clicked()
 {
+    isRecording = false;
     qDebug()<<"StopRecordTriggered";
     audio->stop();
     audioManager->playRecord();
