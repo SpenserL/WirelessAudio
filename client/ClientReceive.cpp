@@ -274,8 +274,8 @@ void CALLBACK ClientCallback(DWORD Error, DWORD BytesTransferred,
 DWORD WINAPI ClientWriteToFileThread(LPVOID lpParameter)
 {
     DWORD byteswrittenfile = 0;
-    char sizeBuf[circularBufferRecv->elementLength];
-    char writeBuf[circularBufferRecv->elementLength];
+    char sizeBuf[SERVER_PACKET_SIZE];
+    char writeBuf[SERVER_PACKET_SIZE];
     char delim[4] = {4, 4, 4, '\0'}, *ptrEnd, *ptrBegin = writeBuf;
     int packetSize;
     bool lastPacket = false;

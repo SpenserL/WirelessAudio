@@ -14,7 +14,6 @@ QBuffer *microphoneBuffer;
 bool isRecording;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
-    ui->setupUi(this);
     isRecording = false;
     audioManager = new AudioManager(this);
     microphoneBuffer = new QBuffer(parent);
@@ -42,7 +41,6 @@ void MainWindow::on_playButton_released()
     //audioManager->stop();
     QFile *file = new QFile(QFileDialog::getOpenFileName(this, tr("Pick A Song"), 0, tr("Music (*.wav)")));
     audioManager->loadSong(file);
-    audioManager->play();
 }
 
 void MainWindow::on_pauseButton_released()
